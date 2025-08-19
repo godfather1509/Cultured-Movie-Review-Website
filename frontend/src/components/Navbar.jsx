@@ -51,7 +51,7 @@ function Navbar() {
 
                     {/* Desktop navigation links */}
                     <div className="hidden md:flex md:ml-4 items-center justify-end space-x-12 rtl:space-x-reverse">
-                        <NavLink to="/login" className="text-blue-700 dark:text-blue-500 hover:underline">LogIn</NavLink>
+                        <NavLink to="/login" className="text-blue-700 dark:text-blue-500 hover:underline">Login</NavLink>
                         <NavLink to="/about" className="text-gray-900 dark:text-white hover:text-blue-700 dark:hover:text-blue-500">About</NavLink>
                     </div>
                 </div>
@@ -76,7 +76,7 @@ function Navbar() {
                     {/* Mobile navigation links */}
                     <ul className="flex flex-col space-y-2 font-medium border border-gray-100 rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700 p-3">
                         <li>
-                            <NavLink to="/" className="block py-2 px-3 text-blue-700 dark:text-blue-500">Home</NavLink>
+                            <NavLink to="/login" className="block py-2 px-3 text-blue-700 dark:text-blue-500">Login</NavLink>
                         </li>
                         <li>
                             <NavLink to="/about" className="block py-2 px-3 text-gray-900 dark:text-white">About</NavLink>
