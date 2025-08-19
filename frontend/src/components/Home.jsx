@@ -41,6 +41,15 @@ function Home() {
         return <p className="p-4 text-red-600">Error: {error}</p>;
     }
 
+    // put this helper somewhere at the top of your file (or in a utils file)
+    function slugify(title) {
+        return (title || "")
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, "-") // replace spaces & special chars with "-"
+            .replace(/^-+|-+$/g, "");    // remove leading/trailing "-"
+    }
+
     return (
         <>
             <div className="grid gap-6 p-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -49,7 +58,8 @@ function Home() {
                     return (
                         <NavLink
                             key={index}
-                            to={`/movies/${movieId}`}
+                            to={`/movie/${slugify(m.title)}/${movieId}`}
+                            state={{ movie: m }}
                             className="block w-full max-w-sm h-full bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700
                      hover:shadow-md focus:ring-4 focus:ring-blue-300 outline-none transition"
                             aria-label={`View details for ${m.title || "movie"}`}
@@ -101,9 +111,6 @@ function Home() {
                 })}
             </div>
         </>
-
-
-
     );
 }
 

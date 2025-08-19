@@ -6,8 +6,8 @@ import Navbar from './components/Navbar'
 import About from './components/About'
 import LogIn from './components/Login'
 import Register from './components/Register'
+import MoviePage from './components/MoviePage'
 import NotFound from './components/NotFound'
-import MoviesContext from './components/contexts/MovieContext'
 
 function App() {
 
@@ -16,10 +16,10 @@ function App() {
       {
         path: "/",
         element:
-            <>
-              <Navbar />
-              <Home/>
-            </>
+          <>
+            <Navbar />
+            <Home />
+          </>
       },
       {
         path: "/about",
@@ -40,6 +40,13 @@ function App() {
         element: <>
           <Navbar />
           <Register />
+        </>
+      },
+      {
+        path: "/movie/:movieTitle/:imdbId",
+        element: <>
+          <Navbar />
+          <MoviePage />
         </>
       },
       {
