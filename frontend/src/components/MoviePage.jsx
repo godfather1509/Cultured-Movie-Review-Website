@@ -1,5 +1,5 @@
 // MoviePage.jsx
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import ReactPlayer from "react-player";
 
@@ -20,7 +20,7 @@ function preloadImages(urls = []) {
   });
 }
 
-export default function MoviePage({ movie: movieProp = null }) {
+function MoviePage({ movie: movieProp = null }) {
   const location = useLocation();
   const { imdbId } = useParams();
 
@@ -41,10 +41,10 @@ export default function MoviePage({ movie: movieProp = null }) {
     m && Array.isArray(m.backdrops) && m.backdrops.length > 0
       ? m.backdrops
       : m && m.backdrop
-      ? [m.backdrop]
-      : m && m.poster
-      ? [m.poster]
-      : [];
+        ? [m.backdrop]
+        : m && m.poster
+          ? [m.poster]
+          : [];
 
   // preload images when movie/backdrops change
   useEffect(() => {
@@ -54,39 +54,6 @@ export default function MoviePage({ movie: movieProp = null }) {
       imgs.forEach((i) => (i.src = ""));
     };
   }, [m]); // eslint-disable-line
-
-  // fetch movie if not provided
-  useEffect(() => {
-    if (initialMovie) return;
-
-    if (!imdbId) {
-      setLoading(false);
-      return;
-    }
-
-    let mounted = true;
-    async function fetchMovie() {
-      setLoading(true);
-      setError(null);
-      try {
-        // <-- REPLACE this endpoint with your real API
-        const res = await fetch(`/api/movies/${encodeURIComponent(imdbId)}`);
-        if (!res.ok) throw new Error(`Failed to fetch (${res.status})`);
-        const data = await res.json();
-        if (mounted) setM(data);
-      } catch (err) {
-        console.error(err);
-        if (mounted) setError("Failed to load movie details.");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
-    fetchMovie();
-    return () => {
-      mounted = false;
-    };
-  }, [initialMovie, imdbId]);
 
   // auto-rotate slideshow (no controls)
   const startAutoRotate = useCallback(() => {
@@ -125,29 +92,10 @@ export default function MoviePage({ movie: movieProp = null }) {
 
   const slideAriaLabel = (i) => `${m.title} backdrop ${i + 1} of ${backdrops.length}`;
 
-  // --- Reviews state (localStorage persistence) ---
-  const storageKey = `movie_reviews_${imdbId || m.imdbId || m.title}`;
-  const [reviews, setReviews] = useState([]);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) setReviews(JSON.parse(raw));
-    } catch {
-      // ignore
-    }
-  }, [storageKey]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(reviews));
-    } catch {
-      // ignore
-    }
-  }, [reviews, storageKey]);
-
   // review form state
+  const [reviews, setReviews] = useState([]);
   const [reviewName, setReviewName] = useState("");
-  const [reviewRating, setReviewRating] = useState(8);
+  const [reviewRating, setReviewRating] = useState(4);
   const [reviewText, setReviewText] = useState("");
   const [reviewError, setReviewError] = useState("");
 
@@ -161,8 +109,8 @@ export default function MoviePage({ movie: movieProp = null }) {
     const rating = Number(reviewRating);
     const text = reviewText.trim();
 
-    if (!rating || rating < 1 || rating > 10) {
-      setReviewError("Please provide a rating between 1 and 10.");
+    if (!rating || rating < 1 || rating > 5) {
+      setReviewError("Please provide a rating between 1 and 5.");
       return;
     }
     if (!text) {
@@ -181,7 +129,7 @@ export default function MoviePage({ movie: movieProp = null }) {
     // optimistic UI update; replace with API call if you have backend
     setReviews((prev) => [newReview, ...prev]);
     setReviewName("");
-    setReviewRating(8);
+    setReviewRating(4);
     setReviewText("");
   }
 
@@ -257,18 +205,10 @@ export default function MoviePage({ movie: movieProp = null }) {
                     )}
                   </div>
                 </div>
-
-                <div className="text-sm mb-6 text-white/90">
-                  <span>{m.runtime ? `${m.runtime} • ` : ""}</span>
-                  <span>{m.certification ? m.certification + " • " : ""}</span>
-                </div>
-
                 <div className="flex gap-6 items-center">
                   <button className="bg-pink-500 text-white px-6 py-3 rounded-lg font-semibold shadow">Book tickets</button>
                 </div>
               </div>
-
-              <div className="ml-auto flex items-start gap-3">{/* intentionally left blank (no controls) */}</div>
             </div>
           </div>
         </div>
@@ -307,12 +247,12 @@ export default function MoviePage({ movie: movieProp = null }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                   <div>
                     <label htmlFor="rev-name" className="block text-sm font-medium text-white">Title</label>
-                    <input id="rev-name" value={reviewName} onChange={(e) => setReviewName(e.target.value)} className="mt-1 bg-gray-50 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Your name" />
+                    <input id="rev-name" value={reviewName} onChange={(e) => setReviewName(e.target.value)} className="mt-1 bg-gray-50 block w-full border-gray-300 rounded-md text-black shadow-sm" />
                   </div>
 
                   <div>
                     <label htmlFor="rev-rating" className="block text-sm font-medium text-white">Rating (1–5)</label>
-                    <input id="rev-rating" type="number" min="1" max="10" value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} className="mt-1 block bg-gray-50 w-full border-gray-300 rounded-md shadow-sm" />
+                    <input id="rev-rating" type="number" min="1" max="5" value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} className="mt-1 block bg-gray-50 w-full text-black border-gray-300 rounded-md shadow-sm" />
                   </div>
 
                   <div>
@@ -322,8 +262,7 @@ export default function MoviePage({ movie: movieProp = null }) {
                 </div>
 
                 <div className="mb-3">
-                  {/* <label htmlFor="rev-text" className="block text-sm font-medium text-white">Review</label> */}
-                  <textarea id="rev-text" rows={2} value={reviewText} onChange={(e) => setReviewText(e.target.value)} className="mt-1 block w-full border-gray-300 bg-gray-10 rounded-md shadow-sm" placeholder="Tell others what you thought..." />
+                  <textarea id="rev-text" rows={2} value={reviewText} onChange={(e) => setReviewText(e.target.value)} className="mt-1 block w-full border-gray-300 bg-gray-10 text-white rounded-md shadow-sm" placeholder="Tell others what you thought..." />
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -370,6 +309,10 @@ export default function MoviePage({ movie: movieProp = null }) {
                 <li><strong>Runtime:</strong> {m.runtime ?? "—"}</li>
                 <li><strong>Director:</strong> {m.director ?? "—"}</li>
                 <li><strong>Language:</strong> {(m.languages ?? []).join(", ") || "—"}</li>
+                <li className="text-sm text-black/90"><span>
+                  <strong>Certification:</strong>
+                  {m.certification ? m.certification + " • " : " —"}</span>
+                </li>
               </ul>
             </div>
           </aside>
@@ -378,3 +321,6 @@ export default function MoviePage({ movie: movieProp = null }) {
     </div>
   );
 }
+
+
+export default MoviePage;

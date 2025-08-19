@@ -11,7 +11,7 @@ function Navbar() {
     return (
         <nav className="bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-700">
             <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-                
+
                 {/* Logo */}
                 <NavLink to="/" className="flex items-center space-x-3 rtl:space-x-reverse">
                     <img src="./public/logo_white.png" className="h-12" alt="Cultured Logo" />
@@ -51,8 +51,9 @@ function Navbar() {
 
                     {/* Desktop navigation links */}
                     <div className="hidden md:flex md:ml-4 items-center justify-end space-x-12 rtl:space-x-reverse">
-                        <NavLink to="/login" className="text-blue-700 dark:text-blue-500 hover:underline">Login</NavLink>
-                        <NavLink to="/about" className="text-gray-900 dark:text-white hover:text-blue-700 dark:hover:text-blue-500">About</NavLink>
+                        <NavLink to="/login" className="text-white hover:text-blue-500 font-bold">Login</NavLink>
+
+                        <NavLink to="/about" className="text-gray-900 dark:text-white hover:text-blue-700 dark:hover:text-blue-500 font-bold">About</NavLink>
                     </div>
                 </div>
 
