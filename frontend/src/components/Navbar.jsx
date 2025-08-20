@@ -77,10 +77,10 @@ function Navbar() {
                     {/* Mobile navigation links */}
                     <ul className="flex flex-col space-y-2 font-medium border border-gray-100 rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700 p-3">
                         <li>
-                            <NavLink to="/login" className="block py-2 px-3 text-blue-700 dark:text-blue-500">Login</NavLink>
+                            <NavLink to="/login" className="block py-2 px-3 text-white dark:text-white font-bold">Login</NavLink>
                         </li>
                         <li>
-                            <NavLink to="/about" className="block py-2 px-3 text-gray-900 dark:text-white">About</NavLink>
+                            <NavLink to="/about" className="block py-2 px-3 text-white font-bold dark:text-white">About</NavLink>
                         </li>
                     </ul>
                 </div>
