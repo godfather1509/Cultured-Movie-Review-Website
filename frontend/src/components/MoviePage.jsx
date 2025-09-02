@@ -57,8 +57,19 @@ function MoviePage({ movie: movieProp = null }) {
   }, [m]); // eslint-disable-line
 
   useEffect(() => {
-    console.log(initialMovie)
-  }, [])
+    const fetchMovie = async () => {
+      try {
+        const res = await api.get(`/api/v1/movies/imdb/${imdbId}`);
+        const payload = res.data;
+        console.log(payload);
+        setM(payload)
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchMovie();
+  }, [imdbId]);
+
 
   // auto-rotate slideshow (no controls)
   const startAutoRotate = useCallback(() => {
@@ -98,7 +109,7 @@ function MoviePage({ movie: movieProp = null }) {
   const slideAriaLabel = (i) => `${m.title} backdrop ${i + 1} of ${backdrops.length}`;
 
   // review form state
-  const [reviews, setReviews] = useState(initialMovie.reviewIds);
+  const [reviews, setReviews] = useState(m.reviewIds);
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewRating, setReviewRating] = useState(4);
   const [reviewText, setReviewText] = useState("");
@@ -129,10 +140,19 @@ function MoviePage({ movie: movieProp = null }) {
 
     console.log(newReview)
     try {
-      const res = await api.post("/api/v1/movie/review/send",newReview);
+      const res = await api.post("/api/v1/movie/review/send", newReview);
+      if (res.status === 200 || res.status === 201) {
+        // Add the new review to the existing reviews array
+        setReviews(prevReviews => [...prevReviews, newReview]);
+        // // Optionally, clear the form fields
+        // setReviewTitle("");
+        // setReviewRating("");
+        // setReviewText("");
+        window.location.reload()
+      }
     } catch (err) {
       console.error(err);
-    } 
+    }
   }
 
   return (
@@ -246,27 +266,34 @@ function MoviePage({ movie: movieProp = null }) {
               <form onSubmit={handleSubmitReview} className="bg-gray-900 rounded-lg p-4 shadow-sm mb-6">
                 {reviewError && <div className="text-sm text-red-600 mb-2">{reviewError}</div>}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 lg:gap-10 mb-3">
                   <div>
                     <label htmlFor="rev-name" className="block text-sm font-medium text-white">Title</label>
-                    <input id="rev-name" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} className="mt-1 bg-gray-50 block w-full border-gray-300 rounded-md text-black shadow-sm" />
+                    <input
+                      id="rev-name"
+                      value={reviewTitle}
+                      onChange={(e) => setReviewTitle(e.target.value)}
+                      className="mt-1 bg-gray-50 block w-full border-gray-300 rounded-md text-black shadow-sm"
+                    />
                   </div>
 
                   <div>
                     <label htmlFor="rev-rating" className="block text-sm font-medium text-white">Rating (1–5)</label>
-                    <input id="rev-rating" type="number" min="1" max="5" value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} className="mt-1 block bg-gray-50 w-full text-black border-gray-300 rounded-md shadow-sm" />
-                  </div>
-
-                  <div>
-                    <label htmlFor="rev-date" className="block text-sm font-medium text-white">Date</label>
-                    <input id="rev-date" type="text" readOnly value={new Date().toLocaleDateString()} className="mt-1 block w-full border-gray-200 bg-gray-50 rounded-md text-sm px-2 py-1 text-black" />
+                    <input
+                      id="rev-rating"
+                      type="number"
+                      min="1"
+                      max="5"
+                      value={reviewRating}
+                      onChange={(e) => setReviewRating(e.target.value)}
+                      className="mt-1 block bg-gray-50 w-full text-black border-gray-300 rounded-md shadow-sm"
+                    />
                   </div>
                 </div>
 
                 <div className="mb-3">
                   <textarea id="rev-text" rows={2} value={reviewText} onChange={(e) => setReviewText(e.target.value)} className="mt-1 block w-full border-gray-300 bg-gray-10 text-white rounded-md shadow-sm" placeholder="Tell others what you thought..." />
                 </div>
-
                 <div className="flex items-center gap-3">
                   <button type="submit" className="cursor-pointer bg-pink-600 text-white px-4 py-2 rounded-md font-semibold">Submit Review</button>
                 </div>

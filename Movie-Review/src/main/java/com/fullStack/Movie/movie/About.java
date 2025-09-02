@@ -1,10 +1,8 @@
-package com.fullStack.Movie;
-
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+package com.fullStack.Movie.movie;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@SpringBootApplication
+// @SpringBootApplication
 @RestController
 public class About {
 

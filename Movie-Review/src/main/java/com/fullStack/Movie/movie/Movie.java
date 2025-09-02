@@ -1,10 +1,12 @@
 package com.fullStack.Movie.movie;
 import org.bson.types.ObjectId;
 import java.util.List;
-import com.fullStack.Movie.review.Review;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
+
+import com.fullStack.Movie.Review.Review;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.fullStack.Movie.review;
+package com.fullStack.Movie.Review;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;

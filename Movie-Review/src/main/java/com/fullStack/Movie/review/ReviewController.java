@@ -1,4 +1,4 @@
-package com.fullStack.Movie.review;
+package com.fullStack.Movie.Review;
 
 import java.util.Map;
 

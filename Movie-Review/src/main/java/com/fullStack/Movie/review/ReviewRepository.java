@@ -1,4 +1,4 @@
-package com.fullStack.Movie.review;
+package com.fullStack.Movie.Review;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
