@@ -1,8 +1,7 @@
-package com.fullStack.Movie;
+package com.fullStack.Movie.movie;
 import org.bson.types.ObjectId;
 import java.util.List;
-import com.fullStack.Review.Review;
-
+import com.fullStack.Movie.review.Review;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;

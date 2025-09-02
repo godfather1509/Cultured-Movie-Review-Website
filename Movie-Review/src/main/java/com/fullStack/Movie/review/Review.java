@@ -1,4 +1,4 @@
-package com.fullStack.Review;
+package com.fullStack.Movie.review;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;

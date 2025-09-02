@@ -1,4 +1,4 @@
-package com.fullStack;
+package com.fullStack.Movie;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;

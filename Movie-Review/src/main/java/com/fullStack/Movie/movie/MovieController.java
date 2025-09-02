@@ -1,4 +1,4 @@
-package com.fullStack.Movie;
+package com.fullStack.Movie.movie;
 
 import java.util.List;
 import java.util.Optional;
