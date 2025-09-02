@@ -2,7 +2,6 @@ package com.fullStack.Movie.Review;
 
 import java.util.List;
 import java.util.Optional;
-
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +15,7 @@ public class MovieService {
 
     @Autowired
     private MovieRepository movieRepository;
+
     public List<Movie> allMovies(){
         return movieRepository.findAll();
     }
@@ -26,6 +26,30 @@ public class MovieService {
 
     public Optional<Movie> singleMovieImdb(String imdbId){
         return movieRepository.findMovieByImdbId(imdbId);
+    }
+
+    public Movie updateAvgRating(String imdbId){
+
+        Optional<Movie> movieOpt=movieRepository.findMovieByImdbId(imdbId); // optional data type allows value to be Movie or null
+
+        if(movieOpt.isEmpty()){
+            throw new RuntimeException("Movie not found"+imdbId);
+        }
+        Movie movie=movieOpt.get();
+
+        List<Review> reviews=movie.getReviewIds();
+
+        long rating=0;
+        for(Review review:reviews){
+            rating+=Integer.parseInt(review.getRating());
+        }
+
+        long avgRating=rating/reviews.size();
+
+        movie.setAvgRating(avgRating);
+
+        return movieRepository.save(movie);
+
     }
     
 }

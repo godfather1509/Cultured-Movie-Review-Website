@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import ReactPlayer from "react-player";
+import api from "../api/apiConfig";
 
 function formatDate(d) {
   if (!d) return "";
@@ -55,6 +56,10 @@ function MoviePage({ movie: movieProp = null }) {
     };
   }, [m]); // eslint-disable-line
 
+  useEffect(() => {
+    console.log(initialMovie)
+  }, [])
+
   // auto-rotate slideshow (no controls)
   const startAutoRotate = useCallback(() => {
     if (intervalRef.current) return;
@@ -93,44 +98,41 @@ function MoviePage({ movie: movieProp = null }) {
   const slideAriaLabel = (i) => `${m.title} backdrop ${i + 1} of ${backdrops.length}`;
 
   // review form state
-  const [reviews, setReviews] = useState([]);
-  const [reviewName, setReviewName] = useState("");
+  const [reviews, setReviews] = useState(initialMovie.reviewIds);
+  const [reviewTitle, setReviewTitle] = useState("");
   const [reviewRating, setReviewRating] = useState(4);
   const [reviewText, setReviewText] = useState("");
   const [reviewError, setReviewError] = useState("");
 
-  const avgRating =
-    reviews.length > 0 ? (reviews.reduce((s, r) => s + Number(r.rating), 0) / reviews.length).toFixed(1) : null;
-
-  function handleSubmitReview(e) {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
     setReviewError("");
-    const name = reviewName.trim() || "Anonymous";
+    const title = reviewTitle.trim() || "Anonymous";
     const rating = Number(reviewRating);
-    const text = reviewText.trim();
+    const reviewBody = reviewText.trim();
 
     if (!rating || rating < 1 || rating > 5) {
       setReviewError("Please provide a rating between 1 and 5.");
       return;
     }
-    if (!text) {
+    if (!reviewBody) {
       setReviewError("Please write a short review.");
       return;
     }
 
     const newReview = {
-      id: Date.now(),
-      name,
+      imdbId,
+      title,
       rating,
-      text,
-      createdAt: new Date().toISOString(),
+      reviewBody,
     };
 
-    // optimistic UI update; replace with API call if you have backend
-    setReviews((prev) => [newReview, ...prev]);
-    setReviewName("");
-    setReviewRating(4);
-    setReviewText("");
+    console.log(newReview)
+    try {
+      const res = await api.post("/api/v1/movie/review/send",newReview);
+    } catch (err) {
+      console.error(err);
+    } 
   }
 
   return (
@@ -179,7 +181,7 @@ function MoviePage({ movie: movieProp = null }) {
                     <svg className="w-5 h-5 text-pink-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118L10 13.347l-2.8 2.034c-.785.57-1.84-.197-1.54-1.118l1.07-3.292a1 1 0 00-.364-1.118L3.666 8.719c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z" />
                     </svg>
-                    <span className="font-semibold mr-2">{m.rating ?? "—"}/10</span>
+                    <span className="font-semibold mr-2">{m.avgRating ?? "—"}/5</span>
                     {m.votes ? <span className="text-sm text-gray-300">({m.votes} votes)</span> : null}
                   </div>
                 </div>
@@ -230,9 +232,9 @@ function MoviePage({ movie: movieProp = null }) {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Reviews</h2>
                 <div className="text-sm text-gray-600">
-                  {avgRating ? (
+                  {m.avgRating ? (
                     <>
-                      <span className="font-semibold">{avgRating}</span> <span className="text-gray-500">avg</span> • <span className="text-gray-500">{reviews.length} reviews</span>
+                      <span className="font-semibold">{m.avgRating}</span> <span className="text-gray-500">avg</span> • <span className="text-gray-500">{reviews.length} reviews</span>
                     </>
                   ) : (
                     <span className="text-gray-500">No reviews yet</span>
@@ -247,7 +249,7 @@ function MoviePage({ movie: movieProp = null }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                   <div>
                     <label htmlFor="rev-name" className="block text-sm font-medium text-white">Title</label>
-                    <input id="rev-name" value={reviewName} onChange={(e) => setReviewName(e.target.value)} className="mt-1 bg-gray-50 block w-full border-gray-300 rounded-md text-black shadow-sm" />
+                    <input id="rev-name" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} className="mt-1 bg-gray-50 block w-full border-gray-300 rounded-md text-black shadow-sm" />
                   </div>
 
                   <div>
@@ -266,8 +268,7 @@ function MoviePage({ movie: movieProp = null }) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <button type="submit" className="bg-pink-600 text-white px-4 py-2 rounded-md font-semibold">Submit Review</button>
-                  <button type="button" onClick={() => { setReviewName(""); setReviewRating(8); setReviewText(""); setReviewError(""); }} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md">Reset</button>
+                  <button type="submit" className="cursor-pointer bg-pink-600 text-white px-4 py-2 rounded-md font-semibold">Submit Review</button>
                 </div>
               </form>
 
@@ -276,18 +277,18 @@ function MoviePage({ movie: movieProp = null }) {
                 {reviews.length === 0 ? (
                   <div className="text-gray-500">Be the first to review this movie.</div>
                 ) : (
-                  reviews.map((r) => (
-                    <article key={r.id} className="bg-white rounded-lg p-4 shadow-sm">
+                  reviews.map((r, i) => (
+                    <article key={i} className="bg-white rounded-lg p-4 shadow-sm">
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-3">
-                            <div className="text-sm font-semibold">{r.name}</div>
-                            <div className="text-xs text-gray-500">• {new Date(r.createdAt).toLocaleString()}</div>
+                            <div className="text-sm text-black font-semibold">{r.title}</div>
+                            <div className="text-xs text-black">• {new Date(r.createdAt).toLocaleDateString('en-GB')}</div>
                           </div>
-                          <div className="mt-2 text-sm text-gray-800">{r.text}</div>
+                          <div className="mt-2 text-sm text-black">{r.body}</div>
                         </div>
                         <div className="ml-4 flex-shrink-0">
-                          <div className="bg-gray-100 px-3 py-1 rounded-full text-sm font-semibold">{r.rating}/10</div>
+                          <div className="bg-black px-3 py-1 rounded-full text-sm font-semibold">{r.rating}</div>
                         </div>
                       </div>
                     </article>

@@ -15,10 +15,13 @@ public class ReviewService {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public Review creatReviewBy(String reviewBody, String imdbId) {
+    @Autowired
+    MovieService movieService;
+
+    public Review creatReviewBy(String reviewBody, String imdbId, String title, String rating) {
         // this takes review content and imdb id of the movie
 
-        Review review = new Review(reviewBody); 
+        Review review = new Review(reviewBody, title, rating);
         // creates a Review object
         reviewRepository.insert(review);
         // saves it in review collection
@@ -27,8 +30,9 @@ public class ReviewService {
                 .matching(Criteria.where("imdbId").is(imdbId))
                 .apply(new Update().push("reviewIds").value(review))
                 .first();
-                // here we filter out the movie based on imdb id and save review object there as well
-
+        // here we filter out the movie based on imdb id and save review object there as well
+        
+        movieService.updateAvgRating(imdbId);
         return review; // return the review object back to controller
     }
 }

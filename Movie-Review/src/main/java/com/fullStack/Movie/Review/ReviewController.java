@@ -23,7 +23,7 @@ public class ReviewController {
     @PostMapping("/send")
     // this tells program that function will accept only "POST" request
     public ResponseEntity<Review> createReview(@RequestBody Map<String, String> payload){
-        return new ResponseEntity<Review>(reviewService.creatReviewBy(payload.get("reviewBody"), payload.get("imdbId")),HttpStatus.CREATED);
+        return new ResponseEntity<Review>(reviewService.creatReviewBy(payload.get("reviewBody"), payload.get("imdbId"), payload.get("title"), payload.get("rating")),HttpStatus.CREATED);
     }   
 
 

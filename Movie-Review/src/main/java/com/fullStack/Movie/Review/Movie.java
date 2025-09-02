@@ -25,6 +25,7 @@ public class Movie {
     private String poster;
     private List<String> genres;
     private List<String> backdrops;
+    private long avgRating;
 
     @DocumentReference
     private List<Review> reviewIds;
