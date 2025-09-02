@@ -16,8 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Movie {
     // this is similar to django's models.py it defines our database fields 
-    @Id 
-    // annotating id field makes it a unique property inside database
+    @Id // annotating id field makes it a unique property inside database
     private ObjectId id;
     private String imdbId;
     private String title;

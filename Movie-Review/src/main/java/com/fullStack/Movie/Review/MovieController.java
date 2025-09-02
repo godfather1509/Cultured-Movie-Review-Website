@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/movies") // this enable request handling
+// this is an api end point
 public class MovieController {
     // this class handels https response from frontend 
     // it sends received data to services class and vice versa
@@ -28,8 +29,7 @@ public class MovieController {
     }    
     // This is Rest api controller 
 
-    @GetMapping("/{id}")
-    // this tells program that function will accept only GET request
+    @GetMapping("/{id}") // this tells program that function will accept only GET request
     public ResponseEntity<Optional<Movie>> getsingleMovie(@PathVariable ObjectId id){
         // Using 'optional' allows us to return either a null value or the specified datatype.
         // this function returns data on basis of Id

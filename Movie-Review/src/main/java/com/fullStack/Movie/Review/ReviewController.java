@@ -16,10 +16,15 @@ public class ReviewController {
 
     @Autowired
     private ReviewService reviewService;
+    /*
+    @Autowired annotations creates instance of given class at start of the program we can retriving it when required
+    */
 
-    @PostMapping
+    @PostMapping("/send")
     // this tells program that function will accept only "POST" request
     public ResponseEntity<Review> createReview(@RequestBody Map<String, String> payload){
         return new ResponseEntity<Review>(reviewService.creatReviewBy(payload.get("reviewBody"), payload.get("imdbId")),HttpStatus.CREATED);
     }   
+
+
 }

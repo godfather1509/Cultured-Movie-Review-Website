@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+.movie-carousel-container {
+    width: 100vw;
+    background-color: black;
+}
+
+.movie-card-container {
+    height: 550px;
+    background-color: black;
+}
+
+.movie-card {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    background-image: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.3)), var(--img);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.movie-overlay {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    padding: 40px;
+    color: white;
+}
+
+.poster-box {
+    flex-shrink: 0;
+}
+
+.movie-poster {
+    height: 300px;
+    border: 3px solid gold;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.movie-info {
+    max-width: 600px;
+}
+
+.movie-title {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.movie-review {
+    font-size: 1rem;
+    margin-bottom: 20px;
+    color: #ddd;
+}
+
+.book-button {
+    font-weight: bold;
+}
