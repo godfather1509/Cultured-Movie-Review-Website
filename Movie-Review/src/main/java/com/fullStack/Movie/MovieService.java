@@ -1,10 +1,11 @@
-package com.fullStack.Movie.Review;
+package com.fullStack.Movie;
 
 import java.util.List;
 import java.util.Optional;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.fullStack.Review.Review;
 
 @Service
 public class MovieService {

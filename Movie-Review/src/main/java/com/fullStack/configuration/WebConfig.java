@@ -1,4 +1,4 @@
-package com.fullStack.Movie.Review;
+package com.fullStack.configuration;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

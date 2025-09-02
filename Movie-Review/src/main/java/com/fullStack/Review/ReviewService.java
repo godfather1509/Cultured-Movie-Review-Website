@@ -1,10 +1,12 @@
-package com.fullStack.Movie.Review;
+package com.fullStack.Review;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import com.fullStack.Movie.MovieService;
+import com.fullStack.Movie.Movie;
 
 @Service
 public class ReviewService {

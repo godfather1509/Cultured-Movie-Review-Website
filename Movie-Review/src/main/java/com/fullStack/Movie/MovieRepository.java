@@ -1,4 +1,4 @@
-package com.fullStack.Movie.Review;
+package com.fullStack.Movie;
 
 import java.util.Optional;
 
