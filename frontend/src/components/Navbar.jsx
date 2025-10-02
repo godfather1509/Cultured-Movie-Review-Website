@@ -52,8 +52,6 @@ function Navbar() {
                     {/* Desktop navigation links */}
                     <div className="hidden md:flex md:ml-4 items-center justify-end space-x-12 rtl:space-x-reverse">
                         <NavLink to="/login" className="text-white hover:text-blue-500 font-bold">Login</NavLink>
-
-                        <NavLink to="/about" className="text-gray-900 dark:text-white hover:text-blue-700 dark:hover:text-blue-500 font-bold">About</NavLink>
                     </div>
                 </div>
 

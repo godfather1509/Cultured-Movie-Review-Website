@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
-import api from './api/apiConfig'
 import Home from './components/Home'
 import Navbar from './components/Navbar'
-import About from './components/About'
 import LogIn from './components/Login'
 import Register from './components/Register'
 import MoviePage from './components/MoviePage'
 import NotFound from './components/NotFound'
+import Theaters from './components/Theaters'
+import Screen from './components/Screen'
+import Checkout from './components/Checkout'
 
 function App() {
 
@@ -20,13 +21,6 @@ function App() {
             <Navbar />
             <Home />
           </>
-      },
-      {
-        path: "/about",
-        element: <>
-          <Navbar />
-          <About />
-        </>
       },
       {
         path: "/login",
@@ -47,6 +41,27 @@ function App() {
         element: <>
           <Navbar />
           <MoviePage />
+        </>
+      },
+      {
+        path: "/theaters/:movieTitle/:imdbId",
+        element: <>
+          <Navbar />
+          <Theaters />
+        </>
+      },
+      {
+        path: "/theater/screen/:theaterId",
+        element: <>
+          <Navbar />
+          <Screen/>
+        </>
+      },
+      {
+        path: "/theater/checkout/:theaterId",
+        element: <>
+          <Navbar />
+          <Checkout/>
         </>
       },
       {

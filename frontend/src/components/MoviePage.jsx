@@ -1,6 +1,6 @@
 // MoviePage.jsx
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import ReactPlayer from "react-player";
 import api from "../api/apiConfig";
 
@@ -144,16 +144,14 @@ function MoviePage({ movie: movieProp = null }) {
       if (res.status === 200 || res.status === 201) {
         // Add the new review to the existing reviews array
         setReviews(prevReviews => [...prevReviews, newReview]);
-        // // Optionally, clear the form fields
-        // setReviewTitle("");
-        // setReviewRating("");
-        // setReviewText("");
         window.location.reload()
       }
     } catch (err) {
       console.error(err);
     }
   }
+
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white">
@@ -228,8 +226,16 @@ function MoviePage({ movie: movieProp = null }) {
                   </div>
                 </div>
                 <div className="flex gap-6 items-center">
-                  <button className="bg-pink-500 text-white px-6 py-3 rounded-lg font-semibold shadow">Book tickets</button>
+                  <button
+                    onClick={() => navigate(`/theaters/${m.title}/${imdbId}`)}
+                    className="bg-pink-600 text-white px-6 py-3 rounded-lg font-semibold shadow cursor-pointer
+               transition transform duration-300 ease-in-out
+               hover:bg-pink-500 hover:shadow-lg"
+                  >
+                    Book tickets
+                  </button>
                 </div>
+
               </div>
             </div>
           </div>
