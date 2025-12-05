@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import ReactPlayer from "react-player";
 import api from "../api/apiConfig";
+import Theaters from "./Theaters";
 
 function formatDate(d) {
   if (!d) return "";
@@ -62,6 +63,7 @@ function MoviePage({ movie: movieProp = null }) {
         const res = await api.get(`/api/v1/movies/imdb/${imdbId}`);
         const payload = res.data;
         console.log(payload);
+        console.log(payload.theaterIds)
         setM(payload)
       } catch (err) {
         console.error(err);

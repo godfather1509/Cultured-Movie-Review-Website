@@ -6,7 +6,8 @@ import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 
-public interface TheaterRepository extends MongoRepository<Theater, ObjectId>{
-        Optional<Theater> findTheaterById(String movieId);
+public interface ShowsRepository extends MongoRepository<Shows, ObjectId>{
+
+    Optional<Shows>getShowsById(ObjectId theaterId, ObjectId movieId);
     
 }

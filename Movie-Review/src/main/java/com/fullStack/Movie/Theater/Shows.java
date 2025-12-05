@@ -15,6 +15,18 @@ class Shows {
 
     @Id
     private ObjectId id;
+
+    private String movieId;
+    private String theaterId;
     private int capacity;
+    private String bookedSeats;
+    private String time;
+
+    public Shows(String theaterId, String movieId, int capacity, String time){
+        this.movieId=movieId;
+        this.capacity=capacity;
+        this.theaterId=theaterId;
+        this.time=time;
+        }
     
 }

@@ -41,7 +41,6 @@ function Home() {
         return <p className="p-4 text-red-600">Error: {error}</p>;
     }
 
-    // put this helper somewhere at the top of your file (or in a utils file)
     function slugify(title) {
         return (title || "")
             .toLowerCase()
