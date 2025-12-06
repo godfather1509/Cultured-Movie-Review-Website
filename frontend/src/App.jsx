@@ -51,14 +51,14 @@ function App() {
         </>
       },
       {
-        path: "/theater/screen/:theaterId",
+        path: "/theater/screen/:theaterName/:screen/:capacity",
         element: <>
           <Navbar />
           <Screen/>
         </>
       },
       {
-        path: "/theater/checkout/:theaterId",
+        path: "/theater/checkout/:theaterName",
         element: <>
           <Navbar />
           <Checkout/>

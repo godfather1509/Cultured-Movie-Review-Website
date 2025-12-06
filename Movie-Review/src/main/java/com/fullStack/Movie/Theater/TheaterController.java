@@ -25,13 +25,13 @@ public class TheaterController {
     private ShowService showService;
 
     @GetMapping("/{movieId}")
-    public ResponseEntity<Optional<Theater>> getTheatersById(@PathVariable String movieId) {
-        return new ResponseEntity<Optional<Theater>>(theaterService.theatersById(movieId), HttpStatus.OK);
+    public ResponseEntity<List<Theater>> getTheatersById(@PathVariable String movieId) {
+        return new ResponseEntity<List<Theater>>(theaterService.theatersById(movieId), HttpStatus.OK);
     }
 
     @GetMapping("/{movieId}/{theaterId}")
-    public ResponseEntity<Optional<Shows>> getShows(@PathVariable ObjectId theaterId, ObjectId movieId) {
-        return new ResponseEntity<Optional<Shows>>(showService.allShows(theaterId,movieId), HttpStatus.OK);
+    public ResponseEntity<List<Shows>> getShows(@PathVariable String theaterId, @PathVariable String movieId) {
+        return new ResponseEntity<List<Shows>>(showService.allShows(theaterId,movieId), HttpStatus.OK);
     }
 
     @SuppressWarnings("unchecked")
@@ -56,10 +56,10 @@ public class TheaterController {
         String movieId = (String) payload.get("movieId");
         int capacity = Integer.parseInt(payload.get("capacity").toString());
         String time=(String) payload.get("showTime");
-
+        String screen=(String) payload.get("screen");
         
         return new ResponseEntity<>(
-                showService.createShow(theaterId, movieId, capacity, time),
+                showService.createShow(theaterId, movieId, capacity, time, screen),
                 HttpStatus.CREATED);
     }
 

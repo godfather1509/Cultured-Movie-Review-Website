@@ -21,12 +21,14 @@ class Shows {
     private int capacity;
     private String bookedSeats;
     private String time;
+    private String screen;
 
-    public Shows(String theaterId, String movieId, int capacity, String time){
+    public Shows(String theaterId, String movieId, int capacity, String time, String screen){
         this.movieId=movieId;
         this.capacity=capacity;
         this.theaterId=theaterId;
         this.time=time;
+        this.screen=screen;
         }
     
 }

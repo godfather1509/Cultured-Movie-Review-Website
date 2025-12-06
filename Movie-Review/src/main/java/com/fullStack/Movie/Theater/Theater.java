@@ -24,13 +24,17 @@ public class Theater {
     private String location;
     private List<String> movieIds;
 
+    public String getTheaterId() {
+        return id != null ? id.toHexString() : null;
+    }
+
     public Theater(String name, String location, List<String> movieIds){
         this.name=name;
         this.location=location;
         this.movieIds=movieIds;
     }
 
-    @DocumentReference
-    private List<Shows> shows;
+    // @DocumentReference
+    // private List<Shows> shows;
 
 }

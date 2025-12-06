@@ -62,8 +62,9 @@ function MoviePage({ movie: movieProp = null }) {
       try {
         const res = await api.get(`/api/v1/movies/imdb/${imdbId}`);
         const payload = res.data;
-        console.log(payload);
-        console.log(payload.theaterIds)
+        console.log("movie:",payload);
+        sessionStorage.setItem("poster",payload.poster)
+        // console.log(payload.theaterIds)
         setM(payload)
       } catch (err) {
         console.error(err);

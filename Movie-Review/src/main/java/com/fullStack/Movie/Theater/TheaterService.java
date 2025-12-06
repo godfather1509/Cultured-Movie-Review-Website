@@ -1,7 +1,6 @@
 package com.fullStack.Movie.Theater;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -24,8 +23,8 @@ public class TheaterService {
     @Autowired
     MovieService movieService;
 
-    public Optional<Theater> theatersById(String movieId) {
-        return theaterRepository.findTheaterById(movieId);
+    public List<Theater> theatersById(String movieId) {
+        return theaterRepository.findByMovieIdsContaining(movieId);
     }
 
     public Theater createTheater(String name, String location, List<String> movieIds) {
@@ -33,11 +32,11 @@ public class TheaterService {
         Theater theater = new Theater(name, location, movieIds);
         theaterRepository.insert(theater);
 
-        for (String imdbId : movieIds) {
-            mongoTemplate.update(Movie.class)
-                    .matching(Criteria.where("imdbId").is(imdbId))
-                    .apply(new Update().push("theaterIds").value(theater)).first();
-        }
+        // for (String imdbId : movieIds) {
+        //     mongoTemplate.update(Movie.class)
+        //             .matching(Criteria.where("imdbId").is(imdbId))
+        //             .apply(new Update().push("theaterIds").value(theater)).first();
+        // }
         return theater;
     }
 

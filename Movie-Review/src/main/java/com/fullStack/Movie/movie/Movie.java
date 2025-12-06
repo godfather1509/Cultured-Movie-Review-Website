@@ -7,7 +7,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
 
 import com.fullStack.Movie.Review.Review;
-import com.fullStack.Movie.Theater.Theater;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,7 +33,4 @@ public class Movie {
     private List<Review> reviewIds;
     // this makes it a dependent relationship
     // all reviews written for a movie will be added to this list of reviews
-
-    @DocumentReference
-    private List<Theater> theaterIds;
 }

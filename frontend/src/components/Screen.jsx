@@ -1,28 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom"; // for navigation
+import { useNavigate, useParams } from "react-router-dom";
 
-// Example placeholder — replace with real fetch
-const fetchSeatLayout = async () => {
+// ⬇️ Dynamic seat layout generator
+const generateSeatLayout = (capacity) => {
+    const seatsPerRow = 8;
+    const totalRows = Math.ceil(capacity / seatsPerRow);
+
+    let seats = [];
+    let seatCount = 0;
+
+    for (let r = 0; r < totalRows; r++) {
+        const rowLetter = String.fromCharCode(65 + r); // A, B, C...
+
+        for (let c = 1; c <= seatsPerRow; c++) {
+            seatCount++;
+            if (seatCount > capacity) break;
+
+            seats.push({
+                id: `${rowLetter}${c}`,
+                row: rowLetter,
+                col: c,
+                status: "available",
+                price: 300, // default price
+            });
+        }
+    }
+
     return {
         layoutType: "Rectangle",
         segments: [
             {
-                section: "VIP",
-                seats: [
-                    { id: "A1", row: "A", col: 1, status: "available", price: 500 },
-                    { id: "A2", row: "A", col: 2, status: "booked", price: 500 },
-                    { id: "A3", row: "A", col: 3, status: "available", price: 500 },
-                    { id: "A4", row: "A", col: 4, status: "available", price: 500 },
-                ],
-            },
-            {
-                section: "Regular",
-                seats: [
-                    { id: "B1", row: "B", col: 1, status: "available", price: 300 },
-                    { id: "B2", row: "B", col: 2, status: "available", price: 300 },
-                    { id: "B3", row: "B", col: 3, status: "booked", price: 300 },
-                    { id: "B4", row: "B", col: 4, status: "available", price: 300 },
-                ],
+                section: "All Seats",
+                seats,
             },
         ],
     };
@@ -33,19 +42,19 @@ const Screen = () => {
     const [selected, setSelected] = useState([]);
     const navigate = useNavigate();
 
-    const { theaterId = "default123" } = useParams()
+    const { theaterName, screen, capacity } = useParams();
 
+    // ⬇️ Build layout from capacity
     useEffect(() => {
-        fetchSeatLayout().then((data) => {
-            setLayout(data);
-        });
-    }, []);
+        if (!capacity) return;
+        const layoutData = generateSeatLayout(Number(capacity));
+        setLayout(layoutData);
+    }, [capacity]);
 
     const toggleSeat = (seat) => {
         if (seat.status === "booked") return;
 
-        const already = selected.includes(seat.id);
-        if (already) {
+        if (selected.includes(seat.id)) {
             setSelected(selected.filter((s) => s !== seat.id));
         } else {
             setSelected([...selected, seat.id]);
@@ -67,18 +76,23 @@ const Screen = () => {
         .reduce((a, b) => a + b, 0);
 
     const handleCheckout = () => {
-        // Pass selected seats & price to checkout page
-        navigate(`/theater/checkout/${theaterId}`, { state: { selected, totalPrice } });
+        navigate(`/theater/checkout/${theaterName}`, {
+            state: { selected, totalPrice, screen },
+        });
     };
 
     return (
         <div className="max-w-3xl mx-auto p-4">
-            <h2 className="text-xl font-semibold mb-4 text-center">Select Seats</h2>
+            <h2 className="text-xl font-semibold mb-4 text-center">
+                Select Seats
+            </h2>
 
             {/* Screen */}
             <div className="mb-6 flex justify-center">
                 <div className="h-4 w-2/3 bg-gray-300 rounded-t-lg shadow-inner">
-                    <span className="block text-xs text-center -mt-6">Screen This Way</span>
+                    <span className="block text-xs text-center -mt-6">
+                        Screen This Way
+                    </span>
                 </div>
             </div>
 
@@ -98,15 +112,16 @@ const Screen = () => {
                                             key={seat.id}
                                             onClick={() => toggleSeat(seat)}
                                             className={`
-                        w-10 h-10 flex items-center justify-center rounded
-                        transition-colors duration-200
-                        ${isBooked
-                                                    ? "bg-gray-400 cursor-not-allowed"
-                                                    : isSelected
+                                                w-10 h-10 flex items-center justify-center rounded
+                                                transition-colors duration-200
+                                                ${
+                                                    isBooked
+                                                        ? "bg-gray-400 cursor-not-allowed"
+                                                        : isSelected
                                                         ? "bg-green-500"
                                                         : "bg-gray-200 hover:bg-blue-300 cursor-pointer"
                                                 }
-                      `}
+                                            `}
                                         >
                                             <span className="text-sm font-medium">
                                                 {seat.row}
