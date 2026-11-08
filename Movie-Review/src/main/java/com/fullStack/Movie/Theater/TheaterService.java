@@ -57,8 +57,12 @@ public class TheaterService {
         Theater t = opt.get();
         if (name != null && !name.trim().isEmpty()) t.setName(name.trim());
         if (location != null && !location.trim().isEmpty()) t.setLocation(location.trim());
-        if (screenCount != null) t.setScreenCount(screenCount);
-        if (screens != null) t.setScreens(screens);
+        if (screens != null) {
+            t.setScreens(screens);
+            t.setScreenCount(screens.size());
+        } else if (screenCount != null) {
+            t.setScreenCount(screenCount);
+        }
         return theaterRepository.save(t);
     }
 

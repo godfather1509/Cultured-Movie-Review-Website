@@ -111,8 +111,18 @@ public class TheaterController {
             }
         }
 
-        Theater updated = theaterService.updateTheater(theaterId, name, location, screenCount, screenConfigs);
-        return new ResponseEntity<>(updated, HttpStatus.OK);
+        try {
+            Theater updated = theaterService.updateTheater(theaterId, name, location, screenCount, screenConfigs);
+            return new ResponseEntity<>(updated, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    // Direct endpoint to update screens for a theater
+    @PutMapping("/{theaterId}/screens")
+    public ResponseEntity<Theater> updateTheaterScreensDirect(@PathVariable("theaterId") String theaterId, @RequestBody Map<String, Object> payload) {
+        return updateTheater(theaterId, payload);
     }
 
     // Add movie to theater

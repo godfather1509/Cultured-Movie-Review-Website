@@ -130,7 +130,19 @@ function TheaterDashboard() {
         }
     };
 
-    const handleSaveScreenLayout = () => {
+    const getTheaterIdentifier = (theater) => {
+        if (!theater) return "";
+        if (typeof theater === "string") return theater;
+        if (theater.theaterId) return String(theater.theaterId);
+        if (typeof theater.id === "string") return theater.id;
+        if (theater.id && typeof theater.id === "object") {
+            if (theater.id.$oid) return String(theater.id.$oid);
+            if (theater.id.timestamp) return String(theater.theaterId || theater.id);
+        }
+        return String(theater.id || theater.name || "");
+    };
+
+    const handleSaveScreenLayout = async () => {
         if (!builderScreenName.trim()) {
             showNotification("Screen name is required (e.g. Audi 1 - 4K Laser)", "error");
             return;
@@ -152,22 +164,43 @@ function TheaterDashboard() {
         if (editingScreenIndex !== null && editingScreenIndex >= 0 && editingScreenIndex < screensList.length) {
             updated = [...screensList];
             updated[editingScreenIndex] = screenData;
-            showNotification(`Updated layout for "${screenData.screenName}" (${computedCapacity} seats)!`, "success");
         } else {
             updated = [...screensList, screenData];
-            showNotification(`Saved screen "${screenData.screenName}" (${computedCapacity} seats)!`, "success");
         }
 
+        // Update local state immediately for fast response
         setScreensList(updated);
         setEditingScreenIndex(null);
         setBuilderScreenName("");
         setBuilderDisabledSeats([]);
 
-        if (selectedTheaterId) {
-            api.put(`/api/v1/theaters/${selectedTheaterId}`, {
-                screens: updated,
-                screenCount: updated.length
-            }).catch((err) => console.warn(err));
+        const tId = getTheaterIdentifier(currentTheater) || getTheaterIdentifier(selectedTheaterId);
+        if (tId) {
+            try {
+                const res = await api.put(`/api/v1/theaters/${tId}`, {
+                    name: currentTheater?.name || currentTheater?.theaterName,
+                    location: currentTheater?.location,
+                    screens: updated,
+                    screenCount: updated.length
+                });
+
+                if (res.data) {
+                    const saved = res.data;
+                    setCurrentTheater(saved);
+                    setAllTheaters((prev) =>
+                        prev.map((t) => (getTheaterIdentifier(t) === tId ? saved : t))
+                    );
+                    if (Array.isArray(saved.screens)) {
+                        setScreensList(saved.screens);
+                    }
+                }
+                showNotification(`Screen "${screenData.screenName}" saved successfully!`, "success");
+            } catch (err) {
+                console.error("Save screen error:", err);
+                showNotification(`Saved "${screenData.screenName}" to screen list.`, "info");
+            }
+        } else {
+            showNotification(`Screen "${screenData.screenName}" saved!`, "success");
         }
     };
 
@@ -186,22 +219,45 @@ function TheaterDashboard() {
         if (el) el.scrollIntoView({ behavior: "smooth" });
     };
 
-    const handleDeleteScreen = (idx) => {
+    const handleDeleteScreen = async (idx) => {
         const scName = screensList[idx]?.screenName || "Screen";
-        if (!confirm(`Are you sure you want to remove "${scName}" from theater layouts?`)) return;
+        if (!confirm(`Are you sure you want to delete "${scName}"?`)) return;
+
         const updated = screensList.filter((_, i) => i !== idx);
         setScreensList(updated);
         if (editingScreenIndex === idx) {
             setEditingScreenIndex(null);
             setBuilderScreenName("");
         }
-        if (selectedTheaterId) {
-            api.put(`/api/v1/theaters/${selectedTheaterId}`, {
-                screens: updated,
-                screenCount: updated.length
-            }).catch((err) => console.warn(err));
+
+        const tId = getTheaterIdentifier(currentTheater) || getTheaterIdentifier(selectedTheaterId);
+        if (tId) {
+            try {
+                const res = await api.put(`/api/v1/theaters/${tId}`, {
+                    name: currentTheater?.name || currentTheater?.theaterName,
+                    location: currentTheater?.location,
+                    screens: updated,
+                    screenCount: updated.length
+                });
+
+                if (res.data) {
+                    const saved = res.data;
+                    setCurrentTheater(saved);
+                    setAllTheaters((prev) =>
+                        prev.map((t) => (getTheaterIdentifier(t) === tId ? saved : t))
+                    );
+                    if (Array.isArray(saved.screens)) {
+                        setScreensList(saved.screens);
+                    }
+                }
+                showNotification(`Screen "${scName}" deleted successfully!`, "success");
+            } catch (err) {
+                console.error("Delete screen error:", err);
+                showNotification(`Screen "${scName}" removed locally.`, "info");
+            }
+        } else {
+            showNotification(`Screen "${scName}" removed.`, "info");
         }
-        showNotification(`Screen "${scName}" removed from layout.`, "info");
     };
 
     const handleResetBuilder = () => {
@@ -269,22 +325,22 @@ function TheaterDashboard() {
                     // Determine active theater
                     let curTId = user?.theaterId || selectedTheaterId;
                     if (!curTId && tList.length > 0) {
-                        curTId = tList[0].theaterId || tList[0].id;
+                        curTId = getTheaterIdentifier(tList[0]);
                     }
 
                     if (curTId) {
                         setSelectedTheaterId(curTId);
-                        const curTheater = tList.find((t) => (t.theaterId || t.id) === curTId) || tList[0];
+                        const curTheater = tList.find((t) => getTheaterIdentifier(t) === curTId) || tList[0];
                         if (curTheater) {
                             setCurrentTheater(curTheater);
                             setProfileName(curTheater.name || curTheater.theaterName || "");
                             setProfileLocation(curTheater.location || "");
 
-                            const screens = curTheater.screens && curTheater.screens.length > 0
+                            const screens = Array.isArray(curTheater.screens)
                                 ? curTheater.screens
                                 : [
-                                    { screenName: "Screen 1 (Laser 4K)", capacity: 64, seatsPerRow: 8, layoutType: "Standard" },
-                                    { screenName: "Screen 2 (Dolby Atmos)", capacity: 80, seatsPerRow: 8, layoutType: "IMAX" }
+                                    { screenName: "Screen 1 (Laser 4K)", capacity: 64, seatsPerRow: 8, layoutType: "Standard Multiplex", rows: 8, columns: 8, aisleType: "center" },
+                                    { screenName: "Screen 2 (Dolby Atmos)", capacity: 80, seatsPerRow: 8, layoutType: "IMAX Tiered", rows: 10, columns: 8, aisleType: "center" }
                                 ];
                             setScreensList(screens);
                             setSelectedScreenName(screens[0]?.screenName || "Screen 1");
@@ -456,13 +512,7 @@ function TheaterDashboard() {
     }).length;
 
     // Screens Performance Breakdown
-    const screensPerformance = (screensList && screensList.length > 0
-        ? screensList
-        : [
-            { screenName: "Screen 1 (Laser 4K)", capacity: 64, layoutType: "Standard" },
-            { screenName: "Screen 2 (Dolby Atmos)", capacity: 80, layoutType: "IMAX" }
-        ]
-    ).map((screen) => {
+    const screensPerformance = (Array.isArray(screensList) ? screensList : []).map((screen) => {
         const sShows = shows.filter((s) => s.screen === screen.screenName);
         const sBooked = sShows.reduce((sum, s) => sum + getBookedSeatsList(s.bookedSeats).length, 0);
         const sCap = sShows.reduce((sum, s) => sum + (Number(s.capacity) || Number(screen.capacity) || 64), 0);
@@ -510,16 +560,16 @@ function TheaterDashboard() {
     // Switch selected theater
     const handleTheaterSelect = (theaterId) => {
         setSelectedTheaterId(theaterId);
-        const curTheater = allTheaters.find((t) => (t.theaterId || t.id) === theaterId);
+        const curTheater = allTheaters.find((t) => getTheaterIdentifier(t) === String(theaterId));
         if (curTheater) {
             setCurrentTheater(curTheater);
             setProfileName(curTheater.name || curTheater.theaterName || "");
             setProfileLocation(curTheater.location || "");
-            const screens = curTheater.screens && curTheater.screens.length > 0
+            const screens = Array.isArray(curTheater.screens)
                 ? curTheater.screens
                 : [
-                    { screenName: "Screen 1 (Laser 4K)", capacity: 64, seatsPerRow: 8, layoutType: "Standard" },
-                    { screenName: "Screen 2 (Dolby Atmos)", capacity: 80, seatsPerRow: 8, layoutType: "IMAX" }
+                    { screenName: "Screen 1 (Laser 4K)", capacity: 64, seatsPerRow: 8, layoutType: "Standard Multiplex", rows: 8, columns: 8, aisleType: "center" },
+                    { screenName: "Screen 2 (Dolby Atmos)", capacity: 80, seatsPerRow: 8, layoutType: "IMAX Tiered", rows: 10, columns: 8, aisleType: "center" }
                 ];
             setScreensList(screens);
             setSelectedScreenName(screens[0]?.screenName || "Screen 1");
