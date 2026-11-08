@@ -22,11 +22,21 @@ function Navbar() {
         <nav className="bg-[#0b0d10] border-b border-zinc-800 sticky top-0 z-40 backdrop-blur-md">
             <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-3.5 px-4 sm:px-8">
                 {/* Logo */}
-                <NavLink to="/" className="flex items-center space-x-3 rtl:space-x-reverse group">
+                <NavLink
+                    to={isTheaterMode ? "/theater-dashboard" : "/"}
+                    className="flex items-center space-x-3 rtl:space-x-reverse group"
+                >
                     <img src="/logo_white.png" className="h-9 transition-transform group-hover:scale-105" alt="Cultured Logo" />
-                    <span className="self-center text-xl font-bold tracking-tight text-white group-hover:text-zinc-300 transition-colors">
-                        Cultured
-                    </span>
+                    <div className="flex flex-col justify-center">
+                        <span className="text-xl font-bold tracking-tight text-white group-hover:text-zinc-300 transition-colors leading-none">
+                            Cultured
+                        </span>
+                        {isTheaterMode && (
+                            <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider mt-1 leading-none">
+                                Theater Studio
+                            </span>
+                        )}
+                    </div>
                 </NavLink>
 
                 {/* Centered Search for desktop (Only for normal customer browsing, hidden in theater & admin mode) */}
@@ -72,18 +82,6 @@ function Navbar() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                             <span>Admin Console</span>
-                        </NavLink>
-                    )}
-
-                    {isTheater && (
-                        <NavLink
-                            to="/theater-dashboard"
-                            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 hover:text-white border border-zinc-600 text-sm font-semibold tracking-tight shadow-sm transition-all duration-200 cursor-pointer"
-                        >
-                            <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                            <span>Theater Studio</span>
                         </NavLink>
                     )}
 
