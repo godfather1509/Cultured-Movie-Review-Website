@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useLocation, useNavigate, NavLink } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../api/apiConfig";
 import { useAuth } from "../context/AuthContext";
 
@@ -927,18 +927,9 @@ function TheaterDashboard() {
                             </div>
                         )}
 
-                        {/* Admin Actions (Main Site & Sign Out) */}
+                        {/* Admin Actions (Sign Out) */}
                         {viewMode === "ADMIN" && (
                             <div className="flex items-center gap-3">
-                                <NavLink
-                                    to="/"
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 text-xs font-semibold tracking-tight transition cursor-pointer"
-                                >
-                                    <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                    </svg>
-                                    <span>Main Site</span>
-                                </NavLink>
                                 <button
                                     onClick={() => {
                                         logout();
