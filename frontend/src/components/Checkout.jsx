@@ -367,6 +367,34 @@ function Checkout() {
                                 Cancel up to 2 hours before showtime for a 100% refund into your original payment method.
                             </div>
                         </div>
+
+                        {/* Razorpay Sandbox Test Credentials */}
+                        <div className="bg-amber-950/20 border border-amber-800/40 rounded-2xl p-4 text-xs space-y-2">
+                            <div className="flex items-center gap-2 font-bold text-amber-300 text-xs">
+                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                                <span>Razorpay Test Mode Credentials</span>
+                            </div>
+                            <p className="text-[11px] text-zinc-400">
+                                Arbitrary random numbers get rejected by Razorpay as unsupported international cards. Use standard sandbox credentials:
+                            </p>
+                            <div className="bg-black/40 p-3 rounded-xl border border-amber-900/30 font-mono text-[11px] space-y-1.5 text-zinc-300">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-zinc-500">Test Card:</span>
+                                    <span className="text-amber-200 font-bold select-all tracking-wider">4111 1111 1111 1111</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-zinc-500">Expiry / CVV:</span>
+                                    <span className="text-amber-200">12/28 • 123</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-zinc-500">Test UPI ID:</span>
+                                    <span className="text-amber-200 select-all">success@razorpay</span>
+                                </div>
+                                <div className="text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80">
+                                    On simulated bank OTP screen, click the green <strong>"Success"</strong> button.
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Right Col: Price Breakdown & Pay */}
