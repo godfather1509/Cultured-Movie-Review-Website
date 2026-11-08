@@ -121,7 +121,7 @@ function Home() {
                         Now Showing
                     </h1>
                     <p className="text-sm text-zinc-400 mt-1">
-                        Select a movie to explore theaters, schedule showtimes, and book tickets
+                        Select a movie to explore theaters and book tickets
                     </p>
                 </div>
 
@@ -178,14 +178,11 @@ function Home() {
                                         </div>
                                     </div>
 
-                                    {/* Card Title & subtle CTA indicator */}
-                                    <div className="p-3.5 flex items-center justify-between gap-2 border-t border-zinc-800/50 bg-[#13161c]">
+                                    {/* Card Title */}
+                                    <div className="p-3.5 border-t border-zinc-800/50 bg-[#13161c]">
                                         <h2 className="text-base font-bold text-zinc-100 group-hover:text-white transition-colors line-clamp-1">
                                             {m.title || "Untitled"}
                                         </h2>
-                                        <span className="text-xs font-semibold text-zinc-300 group-hover:text-white group-hover:bg-zinc-700 px-2.5 py-1 rounded bg-zinc-800/80 border border-zinc-700/60 transition-colors shrink-0">
-                                            Showtimes &rarr;
-                                        </span>
                                     </div>
                                 </NavLink>
                             );

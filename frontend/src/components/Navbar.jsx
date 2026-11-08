@@ -80,7 +80,7 @@ function Navbar() {
                     {!user ? (
                         <NavLink
                             to="/login"
-                            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 font-bold text-sm tracking-tight shadow-sm transition-all duration-200 cursor-pointer"
+                            className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 font-bold text-sm tracking-tight shadow-sm transition-all duration-200 cursor-pointer"
                         >
                             <span>Sign In</span>
                         </NavLink>
