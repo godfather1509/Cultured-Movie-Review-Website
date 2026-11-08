@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, NavLink } from "react-router-dom";
 import api from "../api/apiConfig";
 import { useAuth } from "../context/AuthContext";
 
 function TheaterDashboard() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, isAdmin, isTheater, updateUser } = useAuth();
+    const { user, isAdmin, isTheater, updateUser, logout } = useAuth();
 
     // Mode: "ADMIN" or "THEATER"
     // Only verified administrators can access ADMIN mode
@@ -907,7 +907,7 @@ function TheaterDashboard() {
                         </div>
                     </div>
 
-                    {/* Cinema Selector for Theater Mode */}
+                    {/* Cinema Selector for Theater Mode & Admin Actions */}
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Active Theater Selector */}
                         {viewMode === "THEATER" && allTheaters.length > 0 && (
@@ -924,6 +924,31 @@ function TheaterDashboard() {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                        )}
+
+                        {/* Admin Actions (Main Site & Sign Out) */}
+                        {viewMode === "ADMIN" && (
+                            <div className="flex items-center gap-3">
+                                <NavLink
+                                    to="/"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 text-xs font-semibold tracking-tight transition cursor-pointer"
+                                >
+                                    <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                    </svg>
+                                    <span>Main Site</span>
+                                </NavLink>
+                                <button
+                                    onClick={() => {
+                                        logout();
+                                        navigate("/");
+                                    }}
+                                    className="px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-red-950/60 text-zinc-400 hover:text-red-300 border border-zinc-800 hover:border-red-800/60 text-xs font-semibold tracking-tight transition cursor-pointer"
+                                    title="Sign Out"
+                                >
+                                    Sign Out
+                                </button>
                             </div>
                         )}
                     </div>

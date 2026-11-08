@@ -18,6 +18,11 @@ function Navbar() {
         navigate("/");
     };
 
+    // Completely hide top bar Navbar on Admin Console route so only Administrator Portal header is kept
+    if (location.pathname.startsWith("/admin")) {
+        return null;
+    }
+
     return (
         <nav className="bg-[#0b0d10] border-b border-zinc-800 sticky top-0 z-40 backdrop-blur-md">
             <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-3.5 px-4 sm:px-8">

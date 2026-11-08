@@ -91,7 +91,6 @@ function App() {
       {
         path: "/admin",
         element: <>
-          <Navbar />
           <TheaterDashboard />
         </>
       },
