@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { user, logout, isAdmin, isTheater } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Check if currently operating in Theater Mode or Admin Mode
+    const isTheaterMode = isTheater || location.pathname.startsWith("/theater-dashboard");
+    const isAdminMode = isAdmin || location.pathname.startsWith("/admin");
+    const isManagementMode = isTheaterMode || isAdminMode;
 
     const handleLogout = () => {
         logout();
@@ -23,34 +29,38 @@ function Navbar() {
                     </span>
                 </NavLink>
 
-                {/* Centered Search for desktop */}
-                <div className="flex-1 mx-6 hidden md:flex justify-center">
-                    <div className="relative w-full max-w-md">
-                        <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-zinc-500">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 20 20">
-                                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
-                            </svg>
+                {/* Centered Search for desktop (Only for normal customer browsing, hidden in theater & admin mode) */}
+                {!isManagementMode && (
+                    <div className="flex-1 mx-6 hidden md:flex justify-center">
+                        <div className="relative w-full max-w-md">
+                            <div className="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none text-zinc-500">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 20 20">
+                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                                </svg>
+                            </div>
+                            <input
+                                type="text"
+                                className="block w-full py-2 ps-10 pe-4 text-xs text-zinc-100 border border-zinc-800 rounded-lg bg-zinc-900/90 focus:border-zinc-500 focus:outline-none transition-colors placeholder-zinc-500"
+                                placeholder="Search movies, cinemas, or showtimes..."
+                            />
                         </div>
-                        <input
-                            type="text"
-                            className="block w-full py-2 ps-10 pe-4 text-xs text-zinc-100 border border-zinc-800 rounded-lg bg-zinc-900/90 focus:border-zinc-500 focus:outline-none transition-colors placeholder-zinc-500"
-                            placeholder="Search movies, cinemas, or showtimes..."
-                        />
                     </div>
-                </div>
+                )}
 
                 {/* Right side navigation links */}
                 <div className="flex items-center gap-3">
-                    {/* My Tickets Button */}
-                    <NavLink
-                        to="/my-tickets"
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-700/80 text-sm font-semibold tracking-tight shadow-sm transition-all duration-200 cursor-pointer"
-                    >
-                        <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                        </svg>
-                        <span>My Tickets</span>
-                    </NavLink>
+                    {/* My Tickets Button (Only for normal customer browsing, hidden in theater & admin mode) */}
+                    {!isManagementMode && (
+                        <NavLink
+                            to="/my-tickets"
+                            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-700/80 text-sm font-semibold tracking-tight shadow-sm transition-all duration-200 cursor-pointer"
+                        >
+                            <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                            </svg>
+                            <span>My Tickets</span>
+                        </NavLink>
+                    )}
 
                     {/* Role-based Dashboard button */}
                     {isAdmin && (
@@ -119,13 +129,15 @@ function Navbar() {
                 {/* Mobile Menu */}
                 <div className={`w-full md:hidden mt-3 ${isMobileMenuOpen ? "block" : "hidden"}`}>
                     <div className="flex flex-col gap-2 p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-sm">
-                        <NavLink
-                            to="/my-tickets"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="py-3 px-4 rounded-lg bg-zinc-900 text-zinc-200 font-semibold border border-zinc-700 flex items-center gap-2"
-                        >
-                            <span>My Booked Tickets</span>
-                        </NavLink>
+                        {!isManagementMode && (
+                            <NavLink
+                                to="/my-tickets"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="py-3 px-4 rounded-lg bg-zinc-900 text-zinc-200 font-semibold border border-zinc-700 flex items-center gap-2"
+                            >
+                                <span>My Booked Tickets</span>
+                            </NavLink>
+                        )}
                         {isAdmin && (
                             <NavLink
                                 to="/admin"

@@ -9,8 +9,9 @@ function TheaterDashboard() {
     const { user, isAdmin, isTheater, updateUser } = useAuth();
 
     // Mode: "ADMIN" or "THEATER"
-    const isExplicitAdmin = isAdmin || location.pathname.includes("/admin");
-    const [viewMode, setViewMode] = useState(isExplicitAdmin ? "ADMIN" : isTheater ? "THEATER" : "THEATER");
+    // Only verified administrators can access ADMIN mode
+    const isExplicitAdmin = isAdmin && location.pathname.includes("/admin");
+    const [viewMode, setViewMode] = useState(isExplicitAdmin ? "ADMIN" : "THEATER");
 
     // Tabs:
     // For THEATER: "finances", "movies-showing", "shows", "screens", "profile"
@@ -66,14 +67,19 @@ function TheaterDashboard() {
 
     // Update view mode when auth or path changes
     useEffect(() => {
-        if (isExplicitAdmin) {
+        if (!isAdmin && location.pathname.includes("/admin")) {
+            navigate(isTheater ? "/theater-dashboard" : "/");
+            return;
+        }
+
+        if (isAdmin && location.pathname.includes("/admin")) {
             setViewMode("ADMIN");
             setActiveTab("admin-movies");
-        } else if (isTheater) {
+        } else {
             setViewMode("THEATER");
             setActiveTab("finances");
         }
-    }, [isExplicitAdmin, isTheater]);
+    }, [isAdmin, isTheater, location.pathname, navigate]);
 
     // Initial Load: Theaters and Movies
     useEffect(() => {
@@ -714,38 +720,8 @@ function TheaterDashboard() {
                         </div>
                     </div>
 
-                    {/* Mode Switcher & Theater Selector */}
+                    {/* Cinema Selector for Theater Mode */}
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* Switch View Toggle */}
-                        <div className="flex items-center bg-gray-900/90 border border-gray-700/80 rounded-xl p-1">
-                            <button
-                                onClick={() => {
-                                    setViewMode("THEATER");
-                                    setActiveTab("movies-showing");
-                                }}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                                    viewMode === "THEATER"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold"
-                                        : "text-zinc-400 hover:text-white"
-                                }`}
-                            >
-                                Theater Mode
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setViewMode("ADMIN");
-                                    setActiveTab("admin-movies");
-                                }}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                                    viewMode === "ADMIN"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold"
-                                        : "text-zinc-400 hover:text-white"
-                                }`}
-                            >
-                                Admin Mode
-                            </button>
-                        </div>
-
                         {/* Active Theater Selector */}
                         {allTheaters.length > 0 && (
                             <div className="flex items-center gap-2 bg-gray-900/90 border border-gray-700/80 rounded-xl p-1.5">
