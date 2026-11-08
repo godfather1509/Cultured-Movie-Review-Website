@@ -852,10 +852,10 @@ function TheaterDashboard() {
             {/* Notification Toast */}
             {statusMessage.text && (
                 <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2 border animate-bounce ${statusMessage.type === "error"
-                        ? "bg-red-950 border-red-700 text-red-300"
-                        : statusMessage.type === "info"
-                            ? "bg-blue-950 border-blue-700 text-blue-300"
-                            : "bg-emerald-950 border-emerald-700 text-emerald-300"
+                    ? "bg-red-950 border-red-700 text-red-300"
+                    : statusMessage.type === "info"
+                        ? "bg-blue-950 border-blue-700 text-blue-300"
+                        : "bg-emerald-950 border-emerald-700 text-emerald-300"
                     }`}>
                     <span>✓</span>
                     <span>{statusMessage.text}</span>
@@ -883,8 +883,8 @@ function TheaterDashboard() {
                                     {viewMode === "ADMIN" ? "Administrator Portal" : "Cinema Partner"}
                                 </span>
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${viewMode === "ADMIN"
-                                        ? "bg-amber-950/60 text-amber-300 border-amber-800/60"
-                                        : "bg-zinc-800 text-zinc-300 border-zinc-700"
+                                    ? "bg-amber-950/60 text-amber-300 border-amber-800/60"
+                                    : "bg-zinc-800 text-zinc-300 border-zinc-700"
                                     }`}>
                                     {viewMode === "ADMIN" ? "GLOBAL CONTROLS" : "THEATER MANAGER"}
                                 </span>
@@ -946,8 +946,8 @@ function TheaterDashboard() {
                             <button
                                 onClick={() => setActiveTab("finances")}
                                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "finances"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                                    ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
+                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                                     }`}
                             >
                                 <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -959,8 +959,8 @@ function TheaterDashboard() {
                             <button
                                 onClick={() => setActiveTab("movies-showing")}
                                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "movies-showing"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                                    ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
+                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                                     }`}
                             >
                                 <span>Which Movies We're Showing</span>
@@ -969,8 +969,8 @@ function TheaterDashboard() {
                             <button
                                 onClick={() => setActiveTab("shows")}
                                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "shows"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                                    ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
+                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                                     }`}
                             >
                                 <span>Showtimes & Pricing</span>
@@ -979,8 +979,8 @@ function TheaterDashboard() {
                             <button
                                 onClick={() => setActiveTab("screens")}
                                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "screens"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                                    ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
+                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                                     }`}
                             >
                                 <span>Screens & Layout Design</span>
@@ -989,8 +989,8 @@ function TheaterDashboard() {
                             <button
                                 onClick={() => setActiveTab("profile")}
                                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "profile"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                                    ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
+                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                                     }`}
                             >
                                 <span>Theater Profile & Address</span>
@@ -1004,8 +1004,8 @@ function TheaterDashboard() {
                             <button
                                 onClick={() => setActiveTab("admin-movies")}
                                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "admin-movies"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                                    ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
+                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                                     }`}
                             >
                                 <span>Movies Directory (Add & Delete)</span>
@@ -1014,8 +1014,8 @@ function TheaterDashboard() {
                             <button
                                 onClick={() => setActiveTab("admin-theaters")}
                                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "admin-theaters"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                                    ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
+                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
                                     }`}
                             >
                                 <span>Theaters Directory (Add & Delete)</span>
@@ -1099,10 +1099,10 @@ function TheaterDashboard() {
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-2xl font-black text-white tracking-tight">{overallOccupancyPercent}%</span>
                                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${overallOccupancyPercent >= 80
-                                            ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
-                                            : overallOccupancyPercent >= 50
-                                                ? "bg-amber-950 text-amber-300 border border-amber-800"
-                                                : "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                                        ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                                        : overallOccupancyPercent >= 50
+                                            ? "bg-amber-950 text-amber-300 border border-amber-800"
+                                            : "bg-zinc-800 text-zinc-400 border border-zinc-700"
                                         }`}>
                                         {overallOccupancyPercent >= 80 ? "High Demand" : overallOccupancyPercent >= 50 ? "Moderate" : "Building"}
                                     </span>
@@ -1167,10 +1167,10 @@ function TheaterDashboard() {
                                                         </span>
                                                     </div>
                                                     <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${is100SoldOut
-                                                            ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                                                            : isFillingFast
-                                                                ? "bg-amber-950 text-amber-300 border-amber-800"
-                                                                : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                                                        ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                                        : isFillingFast
+                                                            ? "bg-amber-950 text-amber-300 border-amber-800"
+                                                            : "bg-zinc-800 text-zinc-400 border-zinc-700"
                                                         }`}>
                                                         {is100SoldOut ? "100% SOLD OUT" : isFillingFast ? "FILLING FAST" : "AVAILABLE"}
                                                     </span>
@@ -1201,10 +1201,10 @@ function TheaterDashboard() {
                                                     <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
                                                         <div
                                                             className={`h-2 rounded-full transition-all duration-500 ${is100SoldOut
-                                                                    ? "bg-emerald-500"
-                                                                    : isFillingFast
-                                                                        ? "bg-amber-500"
-                                                                        : "bg-zinc-400"
+                                                                ? "bg-emerald-500"
+                                                                : isFillingFast
+                                                                    ? "bg-amber-500"
+                                                                    : "bg-zinc-400"
                                                                 }`}
                                                             style={{ width: `${Math.min(screen.occupancyPercent, 100)}%` }}
                                                         />
@@ -1336,10 +1336,10 @@ function TheaterDashboard() {
                                                             Seats Sold: <strong className="text-white">{bookedCount}</strong> / {capacity}
                                                         </span>
                                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${is100SoldOut
-                                                                ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                                                                : isFillingFast
-                                                                    ? "bg-amber-950 text-amber-300 border-amber-800"
-                                                                    : "bg-zinc-800 text-zinc-300 border-zinc-700"
+                                                            ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                                            : isFillingFast
+                                                                ? "bg-amber-950 text-amber-300 border-amber-800"
+                                                                : "bg-zinc-800 text-zinc-300 border-zinc-700"
                                                             }`}>
                                                             {is100SoldOut ? "100% SOLD OUT" : `${occ}% SOLD OUT`}
                                                         </span>
@@ -1347,10 +1347,10 @@ function TheaterDashboard() {
                                                     <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
                                                         <div
                                                             className={`h-2 rounded-full transition-all duration-300 ${is100SoldOut
-                                                                    ? "bg-emerald-500"
-                                                                    : isFillingFast
-                                                                        ? "bg-amber-500"
-                                                                        : "bg-zinc-300"
+                                                                ? "bg-emerald-500"
+                                                                : isFillingFast
+                                                                    ? "bg-amber-500"
+                                                                    : "bg-zinc-300"
                                                                 }`}
                                                             style={{ width: `${Math.min(occ, 100)}%` }}
                                                         />
@@ -1439,9 +1439,6 @@ function TheaterDashboard() {
                                         {(currentTheater?.movieIds || []).length} Currently Active
                                     </span>
                                 </h2>
-                                <p className="text-xs text-gray-400 mt-1">
-                                    Select which titles from the Cultured library are licensed and showing in <strong className="text-white">{currentTheater?.name || "your cinema"}</strong>.
-                                </p>
                             </div>
                         </div>
 
@@ -1453,8 +1450,8 @@ function TheaterDashboard() {
                                         <div
                                             key={movie.imdbId}
                                             className={`rounded-2xl border transition-all overflow-hidden flex flex-col justify-between ${showing
-                                                    ? "bg-zinc-900/90 border-zinc-600 shadow-xl"
-                                                    : "bg-gray-950/60 border-gray-800/80 opacity-75 hover:opacity-100"
+                                                ? "bg-zinc-900/90 border-zinc-600 shadow-xl"
+                                                : "bg-gray-950/60 border-gray-800/80 opacity-75 hover:opacity-100"
                                                 }`}
                                         >
                                             <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-800">
@@ -1465,8 +1462,8 @@ function TheaterDashboard() {
                                                 />
                                                 <div className="absolute top-2 right-2">
                                                     <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${showing
-                                                            ? "bg-emerald-900/90 text-emerald-200 border border-emerald-700"
-                                                            : "bg-zinc-900/90 text-zinc-400 border border-zinc-700"
+                                                        ? "bg-emerald-900/90 text-emerald-200 border border-emerald-700"
+                                                        : "bg-zinc-900/90 text-zinc-400 border border-zinc-700"
                                                         }`}>
                                                         {showing ? "✓ Now Showing" : "Not Active"}
                                                     </span>
@@ -1484,8 +1481,8 @@ function TheaterDashboard() {
                                                 <button
                                                     onClick={() => handleToggleMovieInTheater(movie.imdbId)}
                                                     className={`mt-4 w-full py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${showing
-                                                            ? "bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/60"
-                                                            : "bg-zinc-100 hover:bg-white text-zinc-950"
+                                                        ? "bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/60"
+                                                        : "bg-zinc-100 hover:bg-white text-zinc-950"
                                                         }`}
                                                 >
                                                     {showing ? (
@@ -2013,8 +2010,8 @@ function TheaterDashboard() {
                                                                             onClick={() => toggleBuilderSeat(seatId)}
                                                                             title={`${seatId}: ${isOmitted ? "Click to Activate" : "Click to Remove/Omit"}`}
                                                                             className={`w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer ${isOmitted
-                                                                                    ? "bg-transparent border border-dashed border-zinc-800 text-zinc-700 hover:border-zinc-600 hover:text-zinc-500"
-                                                                                    : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 hover:border-zinc-500 shadow-sm"
+                                                                                ? "bg-transparent border border-dashed border-zinc-800 text-zinc-700 hover:border-zinc-600 hover:text-zinc-500"
+                                                                                : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 hover:border-zinc-500 shadow-sm"
                                                                                 }`}
                                                                         >
                                                                             {isOmitted ? "·" : seatNum}
@@ -2158,8 +2155,8 @@ function TheaterDashboard() {
                                                                         <React.Fragment key={seatId}>
                                                                             <div
                                                                                 className={`w-3.5 h-3.5 rounded-sm ${isOmitted
-                                                                                        ? "bg-transparent border border-dashed border-zinc-800/60"
-                                                                                        : "bg-zinc-800 border border-zinc-700/60"
+                                                                                    ? "bg-transparent border border-dashed border-zinc-800/60"
+                                                                                    : "bg-zinc-800 border border-zinc-700/60"
                                                                                     }`}
                                                                                 title={`${seatId}${isOmitted ? " (Omitted)" : ""}`}
                                                                             />
@@ -2503,10 +2500,10 @@ function TheaterDashboard() {
                                             Live Seat Saturation
                                         </span>
                                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${occ >= 100
-                                                ? "bg-emerald-950 text-emerald-300 border-emerald-800"
-                                                : occ >= 70
-                                                    ? "bg-amber-950 text-amber-300 border-amber-800"
-                                                    : "bg-zinc-800 text-zinc-300 border-zinc-700"
+                                            ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                            : occ >= 70
+                                                ? "bg-amber-950 text-amber-300 border-amber-800"
+                                                : "bg-zinc-800 text-zinc-300 border-zinc-700"
                                             }`}>
                                             {occ >= 100 ? "100% SOLD OUT" : `${occ}% OCCUPIED`}
                                         </span>
@@ -2583,8 +2580,8 @@ function TheaterDashboard() {
                                                         ) : (
                                                             <div
                                                                 className={`w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center transition border ${isBooked
-                                                                        ? "bg-red-950/80 text-red-200 border-red-700/80 shadow-sm"
-                                                                        : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500"
+                                                                    ? "bg-red-950/80 text-red-200 border-red-700/80 shadow-sm"
+                                                                    : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500"
                                                                     }`}
                                                                 title={`${seatId}: ${isBooked ? "Booked / Sold" : "Available"}`}
                                                             >
