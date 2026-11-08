@@ -152,6 +152,17 @@ public class TheaterController {
         return new ResponseEntity<>(Map.of("error", "Failed to delete show"), HttpStatus.BAD_REQUEST);
     }
 
+    // Update booked seats for a show (e.g. theater manager quick adjustment / sold out toggle)
+    @PutMapping("/shows/{showId}/booked-seats")
+    public ResponseEntity<?> updateShowBookedSeats(@PathVariable("showId") String showId, @RequestBody Map<String, String> payload) {
+        String seats = payload.get("bookedSeats");
+        Shows updated = showService.updateBookedSeats(showId, seats);
+        if (updated != null) {
+            return ResponseEntity.ok(updated);
+        }
+        return ResponseEntity.badRequest().body(Map.of("error", "Show not found or could not update"));
+    }
+
     // Trigger seeding theaters & shows for all movies in database on-demand
     @PostMapping("/seedAllMovies")
     public ResponseEntity<Map<String, Object>> seedTheatersAndShows() {

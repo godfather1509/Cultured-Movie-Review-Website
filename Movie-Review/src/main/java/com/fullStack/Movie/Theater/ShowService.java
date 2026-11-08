@@ -77,4 +77,15 @@ public class ShowService {
         }
         return null;
     }
+
+    public Shows updateBookedSeats(String showId, String bookedSeats) {
+        try {
+            Shows show = showsRepository.findById(new ObjectId(showId)).orElse(null);
+            if (show != null) {
+                show.setBookedSeats(bookedSeats != null ? bookedSeats.trim() : "");
+                return showsRepository.save(show);
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
 }

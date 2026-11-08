@@ -118,6 +118,15 @@ public class BookingService {
         return bookingRepository.findAllByOrderByBookingTimeDesc();
     }
 
+    public List<Booking> getBookingsByTheater(String theaterId) {
+        if (theaterId == null || theaterId.isBlank()) return new ArrayList<>();
+        List<Booking> list = bookingRepository.findByTheaterId(theaterId);
+        if (list.isEmpty()) {
+            list = bookingRepository.findByTheaterName(theaterId);
+        }
+        return list;
+    }
+
     public Optional<Booking> getBooking(String bookingId) {
         return bookingRepository.findByBookingId(bookingId);
     }

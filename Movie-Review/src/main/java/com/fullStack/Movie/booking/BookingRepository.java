@@ -11,5 +11,7 @@ public interface BookingRepository extends MongoRepository<Booking, ObjectId> {
     Optional<Booking> findByBookingId(String bookingId);
     List<Booking> findAllByOrderByBookingTimeDesc();
     List<Booking> findByImdbId(String imdbId);
+    List<Booking> findByTheaterId(String theaterId);
+    List<Booking> findByTheaterName(String theaterName);
 }
 

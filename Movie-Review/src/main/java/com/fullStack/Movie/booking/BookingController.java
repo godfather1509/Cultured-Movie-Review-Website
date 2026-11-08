@@ -30,6 +30,11 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getAllBookings());
     }
 
+    @GetMapping("/theater/{theaterId}")
+    public ResponseEntity<List<Booking>> getTheaterBookings(@PathVariable String theaterId) {
+        return ResponseEntity.ok(bookingService.getBookingsByTheater(theaterId));
+    }
+
     @GetMapping("/{bookingId}")
     public ResponseEntity<?> getBooking(@PathVariable String bookingId) {
         Optional<Booking> opt = bookingService.getBooking(bookingId);

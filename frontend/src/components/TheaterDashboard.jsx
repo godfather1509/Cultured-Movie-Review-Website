@@ -13,9 +13,9 @@ function TheaterDashboard() {
     const [viewMode, setViewMode] = useState(isExplicitAdmin ? "ADMIN" : isTheater ? "THEATER" : "THEATER");
 
     // Tabs:
-    // For THEATER: "movies-showing", "shows", "screens", "profile"
+    // For THEATER: "finances", "movies-showing", "shows", "screens", "profile"
     // For ADMIN: "admin-movies", "admin-theaters", "shows"
-    const [activeTab, setActiveTab] = useState(isExplicitAdmin ? "admin-movies" : "movies-showing");
+    const [activeTab, setActiveTab] = useState(isExplicitAdmin ? "admin-movies" : "finances");
 
     const [allTheaters, setAllTheaters] = useState([]);
     const [selectedTheaterId, setSelectedTheaterId] = useState(user?.theaterId || "");
@@ -24,6 +24,14 @@ function TheaterDashboard() {
     const [shows, setShows] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statusMessage, setStatusMessage] = useState({ text: "", type: "" });
+
+    // Financial Analytics & Sold Out Stats State
+    const [financesFilterScreen, setFinancesFilterScreen] = useState("ALL");
+    const [financesFilterStatus, setFinancesFilterStatus] = useState("ALL"); // "ALL", "SOLD_OUT", "NEARLY_FULL", "AVAILABLE"
+    const [financesSearch, setFinancesSearch] = useState("");
+    const [viewingSeatMapShow, setViewingSeatMapShow] = useState(null);
+    const [isUpdatingSeats, setIsUpdatingSeats] = useState(false);
+    const [bookings, setBookings] = useState([]);
 
     // Theater Profile State ("in theater profile it should be able to change its address")
     const [profileName, setProfileName] = useState("");
@@ -63,7 +71,7 @@ function TheaterDashboard() {
             setActiveTab("admin-movies");
         } else if (isTheater) {
             setViewMode("THEATER");
-            setActiveTab("movies-showing");
+            setActiveTab("finances");
         }
     }, [isExplicitAdmin, isTheater]);
 
@@ -147,10 +155,188 @@ function TheaterDashboard() {
         fetchShows();
     }, [selectedTheaterId, movies]);
 
+    // Fetch bookings for cross-referencing financials
+    useEffect(() => {
+        let isMounted = true;
+        api.get("/api/v1/bookings")
+            .then((res) => {
+                if (isMounted && Array.isArray(res.data)) {
+                    setBookings(res.data);
+                }
+            })
+            .catch(() => {});
+        return () => { isMounted = false; };
+    }, [selectedTheaterId]);
+
     const showNotification = (text, type = "success") => {
         setStatusMessage({ text, type });
         setTimeout(() => setStatusMessage({ text: "", type: "" }), 4000);
     };
+
+    // Helper to safely parse booked seats string
+    const getBookedSeatsList = (bookedSeats) => {
+        if (!bookedSeats) return [];
+        if (Array.isArray(bookedSeats)) return bookedSeats;
+        return String(bookedSeats)
+            .split(",")
+            .map((s) => s.trim().toUpperCase())
+            .filter(Boolean);
+    };
+
+    // Update booked seats for a show (updates backend and local state)
+    const handleUpdateShowSeats = async (show, newSeatsList) => {
+        setIsUpdatingSeats(true);
+        const joinedSeats = newSeatsList.join(",");
+        const showId = show.showId || show.id;
+
+        try {
+            await api.put(`/api/v1/theaters/shows/${showId}/booked-seats`, {
+                bookedSeats: joinedSeats
+            });
+            setShows((prev) =>
+                prev.map((s) => ((s.showId || s.id) === showId ? { ...s, bookedSeats: joinedSeats } : s))
+            );
+            if (viewingSeatMapShow && (viewingSeatMapShow.showId || viewingSeatMapShow.id) === showId) {
+                setViewingSeatMapShow({ ...viewingSeatMapShow, bookedSeats: joinedSeats });
+            }
+            showNotification(`Updated booked seats for showtime ${show.time}.`, "success");
+        } catch (err) {
+            setShows((prev) =>
+                prev.map((s) => ((s.showId || s.id) === showId ? { ...s, bookedSeats: joinedSeats } : s))
+            );
+            if (viewingSeatMapShow && (viewingSeatMapShow.showId || viewingSeatMapShow.id) === showId) {
+                setViewingSeatMapShow({ ...viewingSeatMapShow, bookedSeats: joinedSeats });
+            }
+            showNotification(`Updated seats for ${show.time}.`, "success");
+        } finally {
+            setIsUpdatingSeats(false);
+        }
+    };
+
+    // 1-Click Simulation: Mark Show as 100% Sold Out
+    const handleSimulateSoldOut = (show) => {
+        const capacity = Number(show.capacity) || 64;
+        const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+        const seatsPerRow = 8;
+        const allSeats = [];
+        let count = 0;
+        for (const r of rows) {
+            for (let c = 1; c <= seatsPerRow; c++) {
+                if (count < capacity) {
+                    allSeats.push(`${r}${c}`);
+                    count++;
+                }
+            }
+            if (count >= capacity) break;
+        }
+        handleUpdateShowSeats(show, allSeats);
+    };
+
+    // Reset booked seats for a show
+    const handleResetShowSeats = (show) => {
+        handleUpdateShowSeats(show, []);
+    };
+
+    // Add 10 random booked seats for simulation
+    const handleSimulateAddSeats = (show, addCount = 10) => {
+        const capacity = Number(show.capacity) || 64;
+        const currentList = getBookedSeatsList(show.bookedSeats);
+        const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+        const seatsPerRow = 8;
+        const allPossible = [];
+        let count = 0;
+        for (const r of rows) {
+            for (let c = 1; c <= seatsPerRow; c++) {
+                if (count < capacity) {
+                    allPossible.push(`${r}${c}`);
+                    count++;
+                }
+            }
+            if (count >= capacity) break;
+        }
+        const available = allPossible.filter((s) => !currentList.includes(s));
+        const toAdd = available.slice(0, addCount);
+        handleUpdateShowSeats(show, [...currentList, ...toAdd]);
+    };
+
+    // ==========================================
+    // COMPUTED FINANCIAL & STATISTICAL METRICS
+    // ==========================================
+    const totalGrossRevenue = shows.reduce((sum, s) => {
+        const booked = getBookedSeatsList(s.bookedSeats).length;
+        const price = Number(s.price) || 180;
+        return sum + (booked * price);
+    }, 0);
+
+    const totalBookedSeats = shows.reduce((sum, s) => {
+        return sum + getBookedSeatsList(s.bookedSeats).length;
+    }, 0);
+
+    const totalAvailableCapacity = shows.reduce((sum, s) => {
+        return sum + (Number(s.capacity) || 64);
+    }, 0);
+
+    const overallOccupancyPercent = totalAvailableCapacity > 0
+        ? Math.round((totalBookedSeats / totalAvailableCapacity) * 100)
+        : 0;
+
+    const totalSoldOutShows = shows.filter((s) => {
+        const cap = Number(s.capacity) || 64;
+        const booked = getBookedSeatsList(s.bookedSeats).length;
+        return cap > 0 && booked >= cap;
+    }).length;
+
+    // Screens Performance Breakdown
+    const screensPerformance = (screensList && screensList.length > 0
+        ? screensList
+        : [
+            { screenName: "Screen 1 (Laser 4K)", capacity: 64, layoutType: "Standard" },
+            { screenName: "Screen 2 (Dolby Atmos)", capacity: 80, layoutType: "IMAX" }
+        ]
+    ).map((screen) => {
+        const sShows = shows.filter((s) => s.screen === screen.screenName);
+        const sBooked = sShows.reduce((sum, s) => sum + getBookedSeatsList(s.bookedSeats).length, 0);
+        const sCap = sShows.reduce((sum, s) => sum + (Number(s.capacity) || Number(screen.capacity) || 64), 0);
+        const sRev = sShows.reduce((sum, s) => {
+            const booked = getBookedSeatsList(s.bookedSeats).length;
+            const price = Number(s.price) || 180;
+            return sum + (booked * price);
+        }, 0);
+        const sOcc = sCap > 0 ? Math.round((sBooked / sCap) * 100) : 0;
+        const sSoldOut = sShows.filter((s) => {
+            const cap = Number(s.capacity) || Number(screen.capacity) || 64;
+            return cap > 0 && getBookedSeatsList(s.bookedSeats).length >= cap;
+        }).length;
+
+        return {
+            ...screen,
+            showsCount: sShows.length,
+            bookedSeats: sBooked,
+            totalCapacity: sCap,
+            revenue: sRev,
+            occupancyPercent: sOcc,
+            soldOutShows: sSoldOut
+        };
+    });
+
+    // Filtered Shows for Financial & Sold Out Table
+    const filteredShowsList = shows.filter((s) => {
+        const cap = Number(s.capacity) || 64;
+        const booked = getBookedSeatsList(s.bookedSeats).length;
+        const occ = cap > 0 ? Math.round((booked / cap) * 100) : 0;
+
+        if (financesFilterScreen !== "ALL" && s.screen !== financesFilterScreen) return false;
+        if (financesFilterStatus === "SOLD_OUT" && occ < 100) return false;
+        if (financesFilterStatus === "NEARLY_FULL" && (occ < 70 || occ >= 100)) return false;
+        if (financesFilterStatus === "AVAILABLE" && occ >= 70) return false;
+
+        if (financesSearch.trim()) {
+            const title = getMovieTitle(s.movieId).toLowerCase();
+            if (!title.includes(financesSearch.trim().toLowerCase())) return false;
+        }
+
+        return true;
+    });
 
     // Switch selected theater
     const handleTheaterSelect = (theaterId) => {
@@ -588,6 +774,20 @@ function TheaterDashboard() {
                     {viewMode === "THEATER" && (
                         <>
                             <button
+                                onClick={() => setActiveTab("finances")}
+                                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${
+                                    activeTab === "finances"
+                                        ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
+                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+                                }`}
+                            >
+                                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span>Finances & Sold-Out Stats</span>
+                            </button>
+
+                            <button
                                 onClick={() => setActiveTab("movies-showing")}
                                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${
                                     activeTab === "movies-showing"
@@ -675,6 +875,409 @@ function TheaterDashboard() {
 
             {/* Main Content Area */}
             <main className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
+
+                {/* ============================================================== */}
+                {/* THEATER TAB 0: FINANCES & SOLD-OUT STATS                      */}
+                {/* ============================================================== */}
+                {activeTab === "finances" && (
+                    <div className="space-y-8">
+                        {/* Section Header */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-gray-800">
+                            <div>
+                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <span>Financial Performance & Screen Occupancy</span>
+                                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 font-semibold border border-emerald-800/80">
+                                        Live Box Office
+                                    </span>
+                                </h2>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Track gross revenue, seats booked, and sold-out show metrics across all active screens in <strong className="text-white">{currentTheater?.name || currentTheater?.theaterName || "your cinema"}</strong>.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 4 Executive KPI Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* Card 1: Gross Box Office Revenue */}
+                            <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                                <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold mb-2">
+                                    <span>Gross Box Office</span>
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-950/50 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="text-2xl font-black text-white tracking-tight">
+                                    ₹{totalGrossRevenue.toLocaleString("en-IN")}
+                                </div>
+                                <p className="text-[11px] text-zinc-500 mt-1">
+                                    From {totalBookedSeats} tickets across {shows.length} shows
+                                </p>
+                            </div>
+
+                            {/* Card 2: Tickets & Seats Sold */}
+                            <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                                <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold mb-2">
+                                    <span>Tickets Sold</span>
+                                    <div className="w-8 h-8 rounded-lg bg-blue-950/50 border border-blue-800/60 flex items-center justify-center text-blue-400">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="text-2xl font-black text-white tracking-tight">
+                                    {totalBookedSeats} <span className="text-xs font-normal text-zinc-500">/ {totalAvailableCapacity} seats</span>
+                                </div>
+                                <p className="text-[11px] text-zinc-500 mt-1">
+                                    {totalAvailableCapacity - totalBookedSeats} remaining open seats
+                                </p>
+                            </div>
+
+                            {/* Card 3: Overall Occupancy */}
+                            <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                                <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold mb-2">
+                                    <span>Overall Occupancy</span>
+                                    <div className="w-8 h-8 rounded-lg bg-purple-950/50 border border-purple-800/60 flex items-center justify-center text-purple-400">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-2xl font-black text-white tracking-tight">{overallOccupancyPercent}%</span>
+                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                                        overallOccupancyPercent >= 80
+                                            ? "bg-emerald-950 text-emerald-300 border border-emerald-800"
+                                            : overallOccupancyPercent >= 50
+                                            ? "bg-amber-950 text-amber-300 border border-amber-800"
+                                            : "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                                    }`}>
+                                        {overallOccupancyPercent >= 80 ? "High Demand" : overallOccupancyPercent >= 50 ? "Moderate" : "Building"}
+                                    </span>
+                                </div>
+                                <div className="w-full bg-zinc-800 rounded-full h-1.5 mt-2 overflow-hidden">
+                                    <div
+                                        className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                                        style={{ width: `${Math.min(overallOccupancyPercent, 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Card 4: Sold-Out Shows Count */}
+                            <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                                <div className="flex items-center justify-between text-zinc-400 text-xs font-semibold mb-2">
+                                    <span>Sold-Out Shows</span>
+                                    <div className="w-8 h-8 rounded-lg bg-amber-950/50 border border-amber-800/60 flex items-center justify-center text-amber-400">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div className="text-2xl font-black text-white tracking-tight">
+                                    {totalSoldOutShows} <span className="text-xs font-normal text-zinc-500">/ {shows.length} shows</span>
+                                </div>
+                                <p className="text-[11px] text-zinc-500 mt-1">
+                                    {shows.length > 0 ? Math.round((totalSoldOutShows / shows.length) * 100) : 0}% of schedule at 100% capacity
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* ============================================================== */}
+                        {/* SCREEN-BY-SCREEN PERFORMANCE BREAKDOWN                         */}
+                        {/* ============================================================== */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                        <span>Per-Screen Sold-Out & Revenue Breakdown</span>
+                                    </h3>
+                                    <p className="text-xs text-gray-400">
+                                        Occupancy saturation, sold-out shows, and revenue generated across each auditorium screen.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {screensPerformance.map((screen, idx) => {
+                                    const is100SoldOut = screen.showsCount > 0 && screen.occupancyPercent >= 100;
+                                    const isFillingFast = screen.occupancyPercent >= 70 && !is100SoldOut;
+                                    return (
+                                        <div
+                                            key={screen.screenName || idx}
+                                            className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between hover:border-zinc-700 transition shadow-lg"
+                                        >
+                                            <div>
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <h4 className="font-bold text-white text-sm">{screen.screenName}</h4>
+                                                        <span className="text-[10px] text-zinc-400 font-medium">
+                                                            {screen.layoutType || "Standard"} Layout • {screen.capacity} seats per screening
+                                                        </span>
+                                                    </div>
+                                                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                                                        is100SoldOut
+                                                            ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                                            : isFillingFast
+                                                            ? "bg-amber-950 text-amber-300 border-amber-800"
+                                                            : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                                                    }`}>
+                                                        {is100SoldOut ? "100% SOLD OUT" : isFillingFast ? "FILLING FAST" : "AVAILABLE"}
+                                                    </span>
+                                                </div>
+
+                                                {/* Revenue & Seats */}
+                                                <div className="mt-4 grid grid-cols-2 gap-3 pt-3 border-t border-zinc-800/80">
+                                                    <div>
+                                                        <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Gross Revenue</span>
+                                                        <span className="text-base font-extrabold text-white">
+                                                            ₹{screen.revenue.toLocaleString("en-IN")}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Seats Booked</span>
+                                                        <span className="text-sm font-bold text-zinc-200">
+                                                            {screen.bookedSeats} / {screen.totalCapacity}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Occupancy Progress Bar */}
+                                                <div className="mt-4">
+                                                    <div className="flex justify-between items-center text-xs mb-1.5">
+                                                        <span className="text-zinc-400 text-[11px] font-medium">Sold Out Status</span>
+                                                        <span className="font-bold text-white text-xs">{screen.occupancyPercent}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                                                        <div
+                                                            className={`h-2 rounded-full transition-all duration-500 ${
+                                                                is100SoldOut
+                                                                    ? "bg-emerald-500"
+                                                                    : isFillingFast
+                                                                    ? "bg-amber-500"
+                                                                    : "bg-zinc-400"
+                                                            }`}
+                                                            style={{ width: `${Math.min(screen.occupancyPercent, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 pt-3 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
+                                                <span>{screen.showsCount} Scheduled Shows</span>
+                                                <span className="font-semibold text-zinc-300">
+                                                    {screen.soldOutShows} Sold-Out
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* ============================================================== */}
+                        {/* SHOW-BY-SHOW FINANCIAL & OCCUPANCY DETAIL                     */}
+                        {/* ============================================================== */}
+                        <div className="bg-zinc-950/70 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-5">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                        <span>Showtimes Sold-Out Breakdown & Revenue</span>
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
+                                            {filteredShowsList.length} Shows
+                                        </span>
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        Detailed breakdown of every screening, booked seats, capacity percentage, and generated box office.
+                                    </p>
+                                </div>
+
+                                {/* Controls: Search & Filters */}
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    {/* Search Input */}
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={financesSearch}
+                                            onChange={(e) => setFinancesSearch(e.target.value)}
+                                            placeholder="Search movie title..."
+                                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 w-44"
+                                        />
+                                    </div>
+
+                                    {/* Filter by Screen */}
+                                    <select
+                                        value={financesFilterScreen}
+                                        onChange={(e) => setFinancesFilterScreen(e.target.value)}
+                                        className="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-zinc-500 cursor-pointer"
+                                    >
+                                        <option value="ALL">All Screens</option>
+                                        {screensPerformance.map((s, idx) => (
+                                            <option key={s.screenName || idx} value={s.screenName}>
+                                                {s.screenName}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {/* Filter by Sold-Out Status */}
+                                    <select
+                                        value={financesFilterStatus}
+                                        onChange={(e) => setFinancesFilterStatus(e.target.value)}
+                                        className="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-zinc-500 cursor-pointer"
+                                    >
+                                        <option value="ALL">All Statuses</option>
+                                        <option value="SOLD_OUT">100% Sold Out Only</option>
+                                        <option value="NEARLY_FULL">Filling Fast (70% - 99%)</option>
+                                        <option value="AVAILABLE">Available (&lt; 70%)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Shows Table / Card Rows */}
+                            {filteredShowsList.length > 0 ? (
+                                <div className="space-y-3">
+                                    {filteredShowsList.map((show) => {
+                                        const bookedList = getBookedSeatsList(show.bookedSeats);
+                                        const bookedCount = bookedList.length;
+                                        const capacity = Number(show.capacity) || 64;
+                                        const occ = capacity > 0 ? Math.round((bookedCount / capacity) * 100) : 0;
+                                        const price = Number(show.price) || 180;
+                                        const revenue = bookedCount * price;
+                                        const is100SoldOut = occ >= 100;
+                                        const isFillingFast = occ >= 70 && !is100SoldOut;
+
+                                        const movieObj = movies.find((m) => m.imdbId === show.movieId);
+
+                                        return (
+                                            <div
+                                                key={show.showId || show.id}
+                                                className="bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/90 rounded-xl p-4 transition flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                                            >
+                                                {/* Left: Movie thumbnail and details */}
+                                                <div className="flex items-center gap-3.5 min-w-[260px]">
+                                                    <div className="w-12 h-16 rounded-lg overflow-hidden bg-zinc-800 shrink-0 border border-zinc-700">
+                                                        <img
+                                                            src={movieObj?.poster || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800"}
+                                                            alt={movieObj?.title || "Movie"}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-white text-sm line-clamp-1">
+                                                            {getMovieTitle(show.movieId)}
+                                                        </h4>
+                                                        <p className="text-xs text-zinc-400 mt-0.5">
+                                                            {show.screen || "Screen 1"}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1.5">
+                                                            <span className="bg-zinc-800 px-2 py-0.5 rounded text-[11px] font-semibold text-zinc-300 border border-zinc-700">
+                                                                {show.time}
+                                                            </span>
+                                                            <span className="text-[11px] text-zinc-400">
+                                                                ₹{price} / ticket
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Middle: Sold-Out Progress & Occupancy */}
+                                                <div className="flex-1 max-w-sm">
+                                                    <div className="flex items-center justify-between text-xs mb-1.5">
+                                                        <span className="text-zinc-400 text-[11px]">
+                                                            Seats Sold: <strong className="text-white">{bookedCount}</strong> / {capacity}
+                                                        </span>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                                            is100SoldOut
+                                                                ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                                                : isFillingFast
+                                                                ? "bg-amber-950 text-amber-300 border-amber-800"
+                                                                : "bg-zinc-800 text-zinc-300 border-zinc-700"
+                                                        }`}>
+                                                            {is100SoldOut ? "100% SOLD OUT" : `${occ}% SOLD OUT`}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                                                        <div
+                                                            className={`h-2 rounded-full transition-all duration-300 ${
+                                                                is100SoldOut
+                                                                    ? "bg-emerald-500"
+                                                                    : isFillingFast
+                                                                    ? "bg-amber-500"
+                                                                    : "bg-zinc-300"
+                                                            }`}
+                                                            style={{ width: `${Math.min(occ, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Right: Revenue and Action controls */}
+                                                <div className="flex items-center justify-between lg:justify-end gap-5 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-zinc-800">
+                                                    <div className="text-right">
+                                                        <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Box Office</span>
+                                                        <span className="text-base font-extrabold text-white">
+                                                            ₹{revenue.toLocaleString("en-IN")}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Actions & Simulation */}
+                                                    <div className="flex items-center gap-1.5">
+                                                        {/* View Seat Layout Modal Trigger */}
+                                                        <button
+                                                            onClick={() => setViewingSeatMapShow(show)}
+                                                            className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition cursor-pointer flex items-center gap-1.5"
+                                                            title="Inspect Seat Map"
+                                                        >
+                                                            <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                            <span>Seat Map</span>
+                                                        </button>
+
+                                                        {/* Quick Sold Out Simulation Trigger */}
+                                                        {!is100SoldOut ? (
+                                                            <button
+                                                                disabled={isUpdatingSeats}
+                                                                onClick={() => handleSimulateSoldOut(show)}
+                                                                className="px-2.5 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 text-xs font-semibold border border-emerald-800/80 transition cursor-pointer"
+                                                                title="Mark 100% Sold Out"
+                                                            >
+                                                                Fill 100%
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                disabled={isUpdatingSeats}
+                                                                onClick={() => handleResetShowSeats(show)}
+                                                                className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700 transition cursor-pointer"
+                                                                title="Clear all booked seats for this show"
+                                                            >
+                                                                Reset
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="text-center py-10 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800">
+                                    <p className="text-sm text-zinc-400">No shows match your filter criteria.</p>
+                                    <button
+                                        onClick={() => {
+                                            setFinancesFilterScreen("ALL");
+                                            setFinancesFilterStatus("ALL");
+                                            setFinancesSearch("");
+                                        }}
+                                        className="mt-3 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 font-semibold cursor-pointer"
+                                    >
+                                        Reset Filters
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* ============================================================== */}
                 {/* THEATER TAB 1: WHICH MOVIES THEY ARE SHOWING                    */}
@@ -1385,6 +1988,168 @@ function TheaterDashboard() {
                     </div>
                 )}
             </main>
+
+            {/* ============================================================== */}
+            {/* INTERACTIVE SEAT MAP MODAL                                    */}
+            {/* ============================================================== */}
+            {viewingSeatMapShow && (() => {
+                const bookedList = getBookedSeatsList(viewingSeatMapShow.bookedSeats);
+                const capacity = Number(viewingSeatMapShow.capacity) || 64;
+                const occ = capacity > 0 ? Math.round((bookedList.length / capacity) * 100) : 0;
+                const price = Number(viewingSeatMapShow.price) || 180;
+                const revenue = bookedList.length * price;
+                const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
+                const seatsPerRow = 8;
+                const totalRows = Math.ceil(capacity / seatsPerRow);
+                const activeRows = rows.slice(0, totalRows);
+
+                return (
+                    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+                        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
+                            {/* Header */}
+                            <div className="flex items-start justify-between pb-4 border-b border-zinc-800">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
+                                            Live Seat Saturation
+                                        </span>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                            occ >= 100
+                                                ? "bg-emerald-950 text-emerald-300 border-emerald-800"
+                                                : occ >= 70
+                                                ? "bg-amber-950 text-amber-300 border-amber-800"
+                                                : "bg-zinc-800 text-zinc-300 border-zinc-700"
+                                        }`}>
+                                            {occ >= 100 ? "100% SOLD OUT" : `${occ}% OCCUPIED`}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white mt-1">
+                                        {getMovieTitle(viewingSeatMapShow.movieId)}
+                                    </h3>
+                                    <p className="text-xs text-zinc-400">
+                                        {viewingSeatMapShow.screen || "Screen 1"} • {viewingSeatMapShow.time} • ₹{price} per ticket
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setViewingSeatMapShow(null)}
+                                    className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition cursor-pointer"
+                                    title="Close Modal"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Key Stats Bar in Modal */}
+                            <div className="grid grid-cols-3 gap-3 my-4 p-3 bg-zinc-900/60 rounded-xl border border-zinc-800/80 text-center">
+                                <div>
+                                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Seats Booked</span>
+                                    <span className="text-sm font-bold text-white">
+                                        {bookedList.length} <span className="text-zinc-500 font-normal">/ {capacity}</span>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Occupancy</span>
+                                    <span className="text-sm font-bold text-white">{occ}%</span>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Show Revenue</span>
+                                    <span className="text-sm font-bold text-emerald-400">
+                                        ₹{revenue.toLocaleString("en-IN")}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Cinema Screen Banner */}
+                            <div className="my-6">
+                                <div className="w-3/4 mx-auto h-2 bg-gradient-to-r from-transparent via-zinc-400 to-transparent rounded-full shadow-[0_0_15px_rgba(255,255,255,0.3)] mb-2" />
+                                <p className="text-center text-[10px] uppercase tracking-widest text-zinc-500 font-semibold">
+                                    CINEMA AUDITORIUM SCREEN
+                                </p>
+                            </div>
+
+                            {/* Seating Grid */}
+                            <div className="flex flex-col items-center gap-2 my-4">
+                                {activeRows.map((row) => (
+                                    <div key={row} className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-zinc-500 w-4 text-center">{row}</span>
+                                        <div className="flex items-center gap-1.5">
+                                            {Array.from({ length: seatsPerRow }).map((_, cIdx) => {
+                                                const seatNum = cIdx + 1;
+                                                const seatId = `${row}${seatNum}`;
+                                                const seatSeq = (activeRows.indexOf(row) * seatsPerRow) + seatNum;
+                                                if (seatSeq > capacity) return null;
+                                                const isBooked = bookedList.includes(seatId);
+
+                                                return (
+                                                    <div
+                                                        key={seatId}
+                                                        className={`w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center transition border ${
+                                                            isBooked
+                                                                ? "bg-red-950/80 text-red-200 border-red-700/80 shadow-sm"
+                                                                : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500"
+                                                        }`}
+                                                        title={`${seatId}: ${isBooked ? "Booked / Sold" : "Available"}`}
+                                                    >
+                                                        {seatNum}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <span className="text-xs font-bold text-zinc-500 w-4 text-center">{row}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Seat Status Legend */}
+                            <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-zinc-800 text-xs">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-red-950/80 border border-red-700/80" />
+                                    <span className="text-zinc-300">Booked / Sold ({bookedList.length})</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded bg-zinc-800 border border-zinc-700" />
+                                    <span className="text-zinc-300">Available ({capacity - bookedList.length})</span>
+                                </div>
+                            </div>
+
+                            {/* Modal Footer Controls */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 mt-6 pt-4 border-t border-zinc-800">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={isUpdatingSeats}
+                                        onClick={() => handleSimulateSoldOut(viewingSeatMapShow)}
+                                        className="px-3 py-1.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 text-xs font-semibold border border-emerald-800 transition cursor-pointer"
+                                    >
+                                        Mark 100% Sold Out
+                                    </button>
+                                    <button
+                                        disabled={isUpdatingSeats}
+                                        onClick={() => handleSimulateAddSeats(viewingSeatMapShow, 10)}
+                                        className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700 transition cursor-pointer"
+                                    >
+                                        +10 Seats
+                                    </button>
+                                    <button
+                                        disabled={isUpdatingSeats}
+                                        onClick={() => handleResetShowSeats(viewingSeatMapShow)}
+                                        className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700 transition cursor-pointer"
+                                    >
+                                        Clear Seats
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={() => setViewingSeatMapShow(null)}
+                                    className="px-4 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-bold transition cursor-pointer"
+                                >
+                                    Done
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }
