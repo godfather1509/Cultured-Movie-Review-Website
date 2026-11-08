@@ -273,7 +273,6 @@ function TheaterDashboard() {
 
     // Admin Add Movie State ("admin should have option to add delete movie")
     const [newMovieTitle, setNewMovieTitle] = useState("");
-    const [newMovieImdb, setNewMovieImdb] = useState("");
     const [newMoviePoster, setNewMoviePoster] = useState("");
     const [newMovieTrailer, setNewMovieTrailer] = useState("");
     const [newMovieRelease, setNewMovieRelease] = useState("2026-05-15");
@@ -724,7 +723,7 @@ function TheaterDashboard() {
             return;
         }
 
-        const autoImdb = newMovieImdb.trim() || ("tt" + Math.floor(1000000 + Math.random() * 9000000));
+        const autoImdb = "tt" + Math.floor(1000000 + Math.random() * 9000000);
         const genresArray = newMovieGenres.split(",").map((g) => g.trim()).filter(Boolean);
 
         const payload = {
@@ -745,7 +744,6 @@ function TheaterDashboard() {
             setNewMovieTitle("");
             setNewMoviePoster("");
             setNewMovieTrailer("");
-            setNewMovieImdb("");
         } catch (err) {
             setMovies((prev) => [payload, ...prev]);
             setSelectedMovieId(payload.imdbId);
@@ -753,7 +751,6 @@ function TheaterDashboard() {
             setNewMovieTitle("");
             setNewMoviePoster("");
             setNewMovieTrailer("");
-            setNewMovieImdb("");
         }
     };
 
@@ -2256,29 +2253,16 @@ function TheaterDashboard() {
                             </div>
 
                             <form onSubmit={handleCreateMovie} className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-300 mb-1.5">Movie Title</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={newMovieTitle}
-                                            onChange={(e) => setNewMovieTitle(e.target.value)}
-                                            placeholder="e.g. Gladiator II"
-                                            className="w-full bg-gray-950 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-300 mb-1.5">IMDb ID (Optional)</label>
-                                        <input
-                                            type="text"
-                                            value={newMovieImdb}
-                                            onChange={(e) => setNewMovieImdb(e.target.value)}
-                                            placeholder="e.g. tt12672956"
-                                            className="w-full bg-gray-950 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500"
-                                        />
-                                    </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-300 mb-1.5">Movie Title</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={newMovieTitle}
+                                        onChange={(e) => setNewMovieTitle(e.target.value)}
+                                        placeholder="e.g. Gladiator II"
+                                        className="w-full bg-gray-950 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
