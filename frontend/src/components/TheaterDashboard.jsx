@@ -15,7 +15,7 @@ function TheaterDashboard() {
 
     // Tabs:
     // For THEATER: "finances", "movies-showing", "shows", "screens", "profile"
-    // For ADMIN: "admin-movies", "admin-theaters", "shows"
+    // For ADMIN: "admin-movies", "admin-theaters"
     const [activeTab, setActiveTab] = useState(isExplicitAdmin ? "admin-movies" : "finances");
 
     const [allTheaters, setAllTheaters] = useState([]);
@@ -910,7 +910,7 @@ function TheaterDashboard() {
                     {/* Cinema Selector for Theater Mode */}
                     <div className="flex flex-wrap items-center gap-2">
                         {/* Active Theater Selector */}
-                        {allTheaters.length > 0 && (
+                        {viewMode === "THEATER" && allTheaters.length > 0 && (
                             <div className="flex items-center gap-2 bg-gray-900/90 border border-gray-700/80 rounded-xl p-1.5">
                                 <span className="text-[11px] text-gray-400 pl-1.5">Cinema:</span>
                                 <select
@@ -1019,17 +1019,6 @@ function TheaterDashboard() {
                                 }`}
                             >
                                 <span>Theaters Directory (Add & Delete)</span>
-                            </button>
-
-                            <button
-                                onClick={() => setActiveTab("shows")}
-                                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-                                    activeTab === "shows"
-                                        ? "bg-zinc-100 text-zinc-950 font-bold shadow-sm"
-                                        : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
-                                }`}
-                            >
-                                <span>All Showtimes & Pricing</span>
                             </button>
                         </>
                     )}
@@ -1612,9 +1601,9 @@ function TheaterDashboard() {
                 )}
 
                 {/* ============================================================== */}
-                {/* TAB: SHOWTIMES & PRICING                                        */}
+                {/* TAB: SHOWTIMES & PRICING (THEATER MODE ONLY)                    */}
                 {/* ============================================================== */}
-                {activeTab === "shows" && (
+                {viewMode === "THEATER" && activeTab === "shows" && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Form to schedule a new show */}
                         <div className="lg:col-span-1 bg-gray-900/80 border border-gray-800 rounded-3xl p-6 shadow-2xl h-fit">
