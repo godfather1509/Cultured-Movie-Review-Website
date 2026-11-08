@@ -372,26 +372,32 @@ function Checkout() {
                         <div className="bg-amber-950/20 border border-amber-800/40 rounded-2xl p-4 text-xs space-y-2">
                             <div className="flex items-center gap-2 font-bold text-amber-300 text-xs">
                                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                                <span>Razorpay Test Mode Credentials</span>
+                                <span>Razorpay Domestic Test Credentials (INR)</span>
                             </div>
                             <p className="text-[11px] text-zinc-400">
-                                Arbitrary random numbers get rejected by Razorpay as unsupported international cards. Use standard sandbox credentials:
+                                4111 1111... is an international card. In Indian INR accounts, Razorpay requires official <strong>Domestic Test Cards</strong> or <strong>UPI</strong>:
                             </p>
-                            <div className="bg-black/40 p-3 rounded-xl border border-amber-900/30 font-mono text-[11px] space-y-1.5 text-zinc-300">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-zinc-500">Test Card:</span>
-                                    <span className="text-amber-200 font-bold select-all tracking-wider">4111 1111 1111 1111</span>
+                            <div className="bg-black/50 p-3 rounded-xl border border-amber-900/30 font-mono text-[11px] space-y-2 text-zinc-300">
+                                <div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-zinc-500 font-sans">Visa Domestic:</span>
+                                        <span className="text-amber-200 font-bold select-all tracking-wider">4718 6091 0820 4366</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[10px] text-zinc-500 mt-0.5">
+                                        <span>Alt (Debit/RuPay):</span>
+                                        <span className="text-zinc-400 select-all font-mono">4100 2800 0000 1007</span>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-zinc-500">Expiry / CVV:</span>
+                                <div className="flex justify-between items-center border-t border-zinc-800/80 pt-1.5">
+                                    <span className="text-zinc-500 font-sans">Expiry / CVV:</span>
                                     <span className="text-amber-200">12/28 • 123</span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-zinc-500">Test UPI ID:</span>
-                                    <span className="text-amber-200 select-all">success@razorpay</span>
+                                <div className="flex justify-between items-center border-t border-zinc-800/80 pt-1.5">
+                                    <span className="text-zinc-500 font-sans">Test UPI (Fastest):</span>
+                                    <span className="text-emerald-400 font-bold select-all">success@razorpay</span>
                                 </div>
-                                <div className="text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80">
-                                    On simulated bank OTP screen, click the green <strong>"Success"</strong> button.
+                                <div className="text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/80 font-sans">
+                                    Click green <strong>"Success"</strong> button on the OTP / bank simulator screen.
                                 </div>
                             </div>
                         </div>
