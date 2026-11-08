@@ -3,29 +3,40 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../api/apiConfig";
 
 // Generates an authentic tiered cinema hall layout with aisle walkway
-const generateTieredSeatLayout = (capacity, bookedString = "", basePrice = 180) => {
+const generateTieredSeatLayout = (capacity, bookedString = "", basePrice = 180, customCols = 0) => {
     const bookedList = bookedString ? bookedString.split(",").map((s) => s.trim().toUpperCase()) : [];
 
-    const seatsPerRow = 8; // 4 seats on left wing, aisle, 4 seats on right wing
-    const totalRows = Math.max(4, Math.ceil(capacity / seatsPerRow));
+    // Dynamically calculate seats per row and total rows based on capacity or custom cols
+    const seatsPerRow = customCols > 0
+        ? customCols
+        : capacity >= 130 ? 14 : capacity >= 90 ? 12 : capacity >= 50 ? 10 : capacity <= 30 ? 6 : 8;
+    const totalRows = Math.max(3, Math.ceil(capacity / seatsPerRow));
+
+    const allRowLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"];
+    const vipRowCount = Math.max(1, Math.min(2, Math.floor(totalRows * 0.25)));
+    const primeRowCount = Math.max(1, Math.floor(totalRows * 0.4));
+
+    const vipRows = allRowLetters.slice(0, vipRowCount);
+    const primeRows = allRowLetters.slice(vipRowCount, vipRowCount + primeRowCount);
+    const classicRows = allRowLetters.slice(vipRowCount + primeRowCount, totalRows);
 
     const tiers = [
         {
             name: "VIP Recliner",
             price: Math.round(basePrice * 1.8),
-            rows: ["A", "B"],
+            rows: vipRows,
             description: "Plush leather recliners with extra legroom & in-seat service"
         },
         {
             name: "Prime Executive",
             price: Math.round(basePrice * 1.35),
-            rows: ["C", "D", "E"],
+            rows: primeRows,
             description: "Optimal viewing angle & premium acoustic experience"
         },
         {
             name: "Classic",
             price: basePrice,
-            rows: ["F", "G", "H", "I", "J"],
+            rows: classicRows.length > 0 ? classicRows : ["C"],
             description: "Comfortable standard cinema seating"
         }
     ];
@@ -76,7 +87,7 @@ const generateTieredSeatLayout = (capacity, bookedString = "", basePrice = 180) 
         }
     });
 
-    return generatedSections;
+    return { sections: generatedSections, seatsPerRow };
 };
 
 const Screen = () => {
@@ -99,6 +110,7 @@ const Screen = () => {
     const [sections, setSections] = useState([]);
     const [selectedSeats, setSelectedSeats] = useState([]);
     const [currentBookedSeats, setCurrentBookedSeats] = useState(bookedSeats);
+    const [activeSeatsPerRow, setActiveSeatsPerRow] = useState(8);
 
     // Fetch latest live reserved seats from database
     useEffect(() => {
@@ -129,9 +141,11 @@ const Screen = () => {
     }, [stateData.theaterId, stateData.imdbId, screenName, showTime, stateData.showId, bookedSeats]);
 
     useEffect(() => {
-        const layout = generateTieredSeatLayout(capacity, currentBookedSeats, showPrice);
-        setSections(layout);
-    }, [capacity, currentBookedSeats, showPrice]);
+        const customCols = stateData.screenCols || 0;
+        const result = generateTieredSeatLayout(capacity, currentBookedSeats, showPrice, customCols);
+        setSections(result.sections);
+        setActiveSeatsPerRow(result.seatsPerRow);
+    }, [capacity, currentBookedSeats, showPrice, stateData.screenCols]);
 
     // Lookup seat details by ID
     const getSeatById = (id) => {
@@ -280,9 +294,10 @@ const Screen = () => {
                             {/* Rows */}
                             <div className="flex flex-col gap-3">
                                 {section.rows.map((row) => {
-                                    // Split into Left Wing (seats 1-4) and Right Wing (seats 5-8) with center aisle
-                                    const leftWing = row.seats.filter((s) => s.col <= 4);
-                                    const rightWing = row.seats.filter((s) => s.col > 4);
+                                    // Split into Left Wing and Right Wing with center aisle
+                                    const midpoint = Math.floor(activeSeatsPerRow / 2);
+                                    const leftWing = row.seats.filter((s) => s.col <= midpoint);
+                                    const rightWing = row.seats.filter((s) => s.col > midpoint);
 
                                     return (
                                         <div key={row.rowLetter} className="flex items-center justify-center gap-2 sm:gap-4">

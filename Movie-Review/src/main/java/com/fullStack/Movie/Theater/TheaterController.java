@@ -73,7 +73,12 @@ public class TheaterController {
                 int cap = Integer.parseInt(s.getOrDefault("capacity", 64).toString());
                 int spr = Integer.parseInt(s.getOrDefault("seatsPerRow", 8).toString());
                 String layout = (String) s.getOrDefault("layoutType", "Standard");
-                screenConfigs.add(new ScreenConfig(sName, cap, spr, layout));
+                int rows = s.containsKey("rows") ? Integer.parseInt(s.get("rows").toString()) : (int) Math.ceil((double) cap / (spr > 0 ? spr : 8));
+                int cols = s.containsKey("columns") ? Integer.parseInt(s.get("columns").toString()) : (spr > 0 ? spr : 8);
+                String aType = (String) s.getOrDefault("aisleType", "center");
+                String aisles = (String) s.getOrDefault("aisles", "");
+                String disabled = (String) s.getOrDefault("disabledSeats", "");
+                screenConfigs.add(new ScreenConfig(sName, cap, cols, layout, rows, cols, aType, aisles, disabled));
             }
         }
 
@@ -97,7 +102,12 @@ public class TheaterController {
                 int cap = Integer.parseInt(s.getOrDefault("capacity", 64).toString());
                 int spr = Integer.parseInt(s.getOrDefault("seatsPerRow", 8).toString());
                 String layout = (String) s.getOrDefault("layoutType", "Standard");
-                screenConfigs.add(new ScreenConfig(sName, cap, spr, layout));
+                int rows = s.containsKey("rows") ? Integer.parseInt(s.get("rows").toString()) : (int) Math.ceil((double) cap / (spr > 0 ? spr : 8));
+                int cols = s.containsKey("columns") ? Integer.parseInt(s.get("columns").toString()) : (spr > 0 ? spr : 8);
+                String aType = (String) s.getOrDefault("aisleType", "center");
+                String aisles = (String) s.getOrDefault("aisles", "");
+                String disabled = (String) s.getOrDefault("disabledSeats", "");
+                screenConfigs.add(new ScreenConfig(sName, cap, cols, layout, rows, cols, aType, aisles, disabled));
             }
         }
 

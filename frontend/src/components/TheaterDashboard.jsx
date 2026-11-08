@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../api/apiConfig";
 import { useAuth } from "../context/AuthContext";
@@ -46,11 +46,174 @@ function TheaterDashboard() {
     const [showCapacity, setShowCapacity] = useState(64);
     const [ticketPrice, setTicketPrice] = useState(200);
 
-    // Screen Layout Design State ("layout screens")
+    // Flexible Screen Layout Builder State ("in theater layout user should get more flexibility to add layout as cinema screens can be of any layout not fixed no of rows and coloums")
     const [screensList, setScreensList] = useState([]);
-    const [newScreenName, setNewScreenName] = useState("");
-    const [newScreenCap, setNewScreenCap] = useState(64);
-    const [newScreenLayout, setNewScreenLayout] = useState("Standard");
+    const [builderScreenName, setBuilderScreenName] = useState("");
+    const [builderLayoutType, setBuilderLayoutType] = useState("Standard Multiplex");
+    const [builderRows, setBuilderRows] = useState(8);
+    const [builderCols, setBuilderCols] = useState(12);
+    const [builderAisleType, setBuilderAisleType] = useState("center"); // "center", "dual", "single", "custom"
+    const [builderCustomAisles, setBuilderCustomAisles] = useState("");
+    const [builderDisabledSeats, setBuilderDisabledSeats] = useState([]); // Array of seat IDs omitted e.g. ["A1", "A2"]
+    const [editingScreenIndex, setEditingScreenIndex] = useState(null);
+
+    // Dynamic capacity calculation based on active seats
+    const computedCapacity = useMemo(() => {
+        const r = Math.max(1, Number(builderRows) || 8);
+        const c = Math.max(1, Number(builderCols) || 12);
+        const total = r * c;
+        const allRows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"].slice(0, r);
+        const disabledInBounds = builderDisabledSeats.filter((seatId) => {
+            const rowChar = seatId.charAt(0);
+            const colNum = parseInt(seatId.slice(1), 10);
+            return allRows.includes(rowChar) && colNum >= 1 && colNum <= c;
+        });
+        return Math.max(1, total - disabledInBounds.length);
+    }, [builderRows, builderCols, builderDisabledSeats]);
+
+    const getAisleGaps = (cols, aisleType, customAisles = "") => {
+        const c = Number(cols) || 12;
+        if (aisleType === "center") {
+            return [Math.floor(c / 2)];
+        }
+        if (aisleType === "dual") {
+            const left = Math.max(2, Math.round(c * 0.25));
+            const right = Math.min(c - 2, Math.round(c * 0.75));
+            return [left, right];
+        }
+        if (aisleType === "custom") {
+            return (customAisles || "")
+                .split(",")
+                .map((s) => parseInt(s.trim(), 10))
+                .filter((n) => !isNaN(n) && n > 0 && n < c);
+        }
+        return [];
+    };
+
+    const toggleBuilderSeat = (seatId) => {
+        setBuilderDisabledSeats((prev) =>
+            prev.includes(seatId) ? prev.filter((id) => id !== seatId) : [...prev, seatId]
+        );
+    };
+
+    const loadPresetTemplate = (presetKey) => {
+        if (presetKey === "multiplex") {
+            setBuilderLayoutType("Standard Multiplex");
+            setBuilderRows(8);
+            setBuilderCols(12);
+            setBuilderAisleType("center");
+            setBuilderDisabledSeats([]);
+        } else if (presetKey === "imax") {
+            setBuilderLayoutType("IMAX Tiered");
+            setBuilderRows(10);
+            setBuilderCols(16);
+            setBuilderAisleType("dual");
+            setBuilderDisabledSeats([]);
+        } else if (presetKey === "vip") {
+            setBuilderLayoutType("VIP Recliner Lounge");
+            setBuilderRows(4);
+            setBuilderCols(6);
+            setBuilderAisleType("center");
+            setBuilderDisabledSeats([]);
+        } else if (presetKey === "dolby") {
+            setBuilderLayoutType("Dolby Cinema 3-Section");
+            setBuilderRows(9);
+            setBuilderCols(14);
+            setBuilderAisleType("dual");
+            setBuilderDisabledSeats([]);
+        } else if (presetKey === "single") {
+            setBuilderLayoutType("Grand Cinema Hall");
+            setBuilderRows(12);
+            setBuilderCols(14);
+            setBuilderAisleType("dual");
+            setBuilderDisabledSeats([]);
+        }
+    };
+
+    const handleSaveScreenLayout = () => {
+        if (!builderScreenName.trim()) {
+            showNotification("Screen name is required (e.g. Audi 1 - 4K Laser)", "error");
+            return;
+        }
+
+        const screenData = {
+            screenName: builderScreenName.trim(),
+            capacity: computedCapacity,
+            seatsPerRow: Number(builderCols) || 12,
+            layoutType: builderLayoutType,
+            rows: Number(builderRows) || 8,
+            columns: Number(builderCols) || 12,
+            aisleType: builderAisleType,
+            aisles: getAisleGaps(builderCols, builderAisleType, builderCustomAisles).join(","),
+            disabledSeats: builderDisabledSeats.join(",")
+        };
+
+        let updated;
+        if (editingScreenIndex !== null && editingScreenIndex >= 0 && editingScreenIndex < screensList.length) {
+            updated = [...screensList];
+            updated[editingScreenIndex] = screenData;
+            showNotification(`Updated layout for "${screenData.screenName}" (${computedCapacity} seats)!`, "success");
+        } else {
+            updated = [...screensList, screenData];
+            showNotification(`Saved screen "${screenData.screenName}" (${computedCapacity} seats)!`, "success");
+        }
+
+        setScreensList(updated);
+        setEditingScreenIndex(null);
+        setBuilderScreenName("");
+        setBuilderDisabledSeats([]);
+
+        if (selectedTheaterId) {
+            api.put(`/api/v1/theaters/${selectedTheaterId}`, {
+                screens: updated,
+                screenCount: updated.length
+            }).catch((err) => console.warn(err));
+        }
+    };
+
+    const handleEditScreen = (screen, idx) => {
+        setEditingScreenIndex(idx);
+        setBuilderScreenName(screen.screenName || "");
+        setBuilderLayoutType(screen.layoutType || "Standard Multiplex");
+        const cols = screen.columns || screen.seatsPerRow || 12;
+        const rows = screen.rows || Math.ceil(screen.capacity / cols) || 8;
+        setBuilderRows(rows);
+        setBuilderCols(cols);
+        setBuilderAisleType(screen.aisleType || (cols >= 14 ? "dual" : "center"));
+        setBuilderCustomAisles(screen.aisles || "");
+        setBuilderDisabledSeats(screen.disabledSeats ? screen.disabledSeats.split(",").filter(Boolean) : []);
+        const el = document.getElementById("screen-layout-builder");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const handleDeleteScreen = (idx) => {
+        const scName = screensList[idx]?.screenName || "Screen";
+        if (!confirm(`Are you sure you want to remove "${scName}" from theater layouts?`)) return;
+        const updated = screensList.filter((_, i) => i !== idx);
+        setScreensList(updated);
+        if (editingScreenIndex === idx) {
+            setEditingScreenIndex(null);
+            setBuilderScreenName("");
+        }
+        if (selectedTheaterId) {
+            api.put(`/api/v1/theaters/${selectedTheaterId}`, {
+                screens: updated,
+                screenCount: updated.length
+            }).catch((err) => console.warn(err));
+        }
+        showNotification(`Screen "${scName}" removed from layout.`, "info");
+    };
+
+    const handleResetBuilder = () => {
+        setEditingScreenIndex(null);
+        setBuilderScreenName("");
+        setBuilderLayoutType("Standard Multiplex");
+        setBuilderRows(8);
+        setBuilderCols(12);
+        setBuilderAisleType("center");
+        setBuilderCustomAisles("");
+        setBuilderDisabledSeats([]);
+    };
 
     // Admin Add Movie State ("admin should have option to add delete movie")
     const [newMovieTitle, setNewMovieTitle] = useState("");
@@ -497,33 +660,7 @@ function TheaterDashboard() {
         showNotification("Showtime cancelled successfully.", "info");
     };
 
-    // 5. Add Screen Layout
-    const handleAddScreen = () => {
-        if (!newScreenName.trim()) {
-            showNotification("Screen name is required", "error");
-            return;
-        }
 
-        const newScreen = {
-            screenName: newScreenName.trim(),
-            capacity: Number(newScreenCap) || 64,
-            seatsPerRow: newScreenLayout === "VIP Recliner" ? 6 : 8,
-            layoutType: newScreenLayout
-        };
-
-        const updated = [...screensList, newScreen];
-        setScreensList(updated);
-        setNewScreenName("");
-
-        if (selectedTheaterId) {
-            api.put(`/api/v1/theaters/${selectedTheaterId}`, {
-                screens: updated,
-                screenCount: updated.length
-            }).catch((err) => console.warn(err));
-        }
-
-        showNotification(`Screen "${newScreen.screenName}" added to layout!`, "success");
-    };
 
     // ==========================================
     // ADMIN CAPABILITIES (Add/Delete Movies & Theaters)
@@ -1591,102 +1728,457 @@ function TheaterDashboard() {
                 )}
 
                 {/* ============================================================== */}
-                {/* TAB: SCREENS & LAYOUT DESIGN                                    */}
+                {/* TAB: SCREENS & LAYOUT DESIGN (FLEXIBLE ARCHITECTURE STUDIO)    */}
                 {/* ============================================================== */}
                 {activeTab === "screens" && (
-                    <div className="space-y-8">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="space-y-10">
+                        {/* Section Header */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
                             <div>
-                                <h2 className="text-xl font-bold text-white">Cinema Screens & Seating Layouts</h2>
-                                <p className="text-xs text-gray-400">Configure screen capacities and view real-time layout structures</p>
-                            </div>
-
-                            {/* Add Screen Quick Form */}
-                            <div className="flex flex-wrap items-center gap-2 bg-gray-900 p-2 rounded-2xl border border-gray-800">
-                                <input
-                                    type="text"
-                                    placeholder="Screen Name (e.g. Audi 3 - 4DX)"
-                                    value={newScreenName}
-                                    onChange={(e) => setNewScreenName(e.target.value)}
-                                    className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-zinc-500"
-                                />
-                                <select
-                                    value={newScreenLayout}
-                                    onChange={(e) => setNewScreenLayout(e.target.value)}
-                                    className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-zinc-500 cursor-pointer"
-                                >
-                                    <option value="Standard">Standard Layout</option>
-                                    <option value="IMAX">IMAX Tiered</option>
-                                    <option value="VIP Recliner">VIP Recliner Lounge</option>
-                                </select>
-                                <input
-                                    type="number"
-                                    value={newScreenCap}
-                                    onChange={(e) => setNewScreenCap(e.target.value)}
-                                    className="w-16 bg-gray-800 border border-gray-700 rounded-xl px-2 py-1.5 text-xs text-white text-center focus:outline-none focus:border-zinc-500"
-                                />
-                                <button
-                                    onClick={handleAddScreen}
-                                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 font-bold text-sm shadow transition cursor-pointer"
-                                >
-                                    + Add Screen
-                                </button>
+                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <span>Auditorium Layout Builder & Screen Architecture</span>
+                                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
+                                        {screensList.length} Active Screens
+                                    </span>
+                                </h2>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Design flexible cinema hall layouts with custom rows, columns, gangway aisles, and click-to-toggle seat spaces for irregular auditoriums.
+                                </p>
                             </div>
                         </div>
 
-                        {/* Screen Cards with Live Mini Layout Previews */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {screensList.map((screen, sIdx) => {
-                                const rowsCount = Math.ceil(screen.capacity / (screen.seatsPerRow || 8));
-                                const rowLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"].slice(0, rowsCount);
+                        {/* ============================================================== */}
+                        {/* 1. FLEXIBLE SCREEN LAYOUT BUILDER & LIVE CANVAS                */}
+                        {/* ============================================================== */}
+                        <div id="screen-layout-builder" className="bg-zinc-950/80 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                                            {editingScreenIndex !== null ? "Editing Existing Screen" : "Design New Screen"}
+                                        </span>
+                                        {editingScreenIndex !== null && (
+                                            <span className="text-[10px] px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-bold">
+                                                Update Mode
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white mt-0.5">
+                                        {editingScreenIndex !== null
+                                            ? `Modify Layout: ${builderScreenName || "Selected Screen"}`
+                                            : "Custom Cinema Auditorium Designer"}
+                                    </h3>
+                                </div>
 
-                                return (
-                                    <div key={sIdx} className="bg-gray-900/80 border border-gray-800 rounded-3xl p-6 shadow-xl space-y-4">
-                                        <div className="flex items-center justify-between pb-3 border-b border-gray-800">
-                                            <div>
-                                                <h3 className="text-base font-bold text-white">{screen.screenName}</h3>
-                                                <span className="text-xs text-zinc-400 font-semibold">{screen.layoutType}</span>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="text-xs text-gray-400 block">Total Capacity</span>
-                                                <span className="text-lg font-black text-white">{screen.capacity} Seats</span>
-                                            </div>
-                                        </div>
+                                {/* Preset Templates */}
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-[11px] text-zinc-400 font-semibold mr-1">Presets:</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => loadPresetTemplate("multiplex")}
+                                        className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold border border-zinc-700 transition cursor-pointer"
+                                    >
+                                        Multiplex (8×12)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => loadPresetTemplate("imax")}
+                                        className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold border border-zinc-700 transition cursor-pointer"
+                                    >
+                                        IMAX Grand (10×16)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => loadPresetTemplate("vip")}
+                                        className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold border border-zinc-700 transition cursor-pointer"
+                                    >
+                                        VIP Recliner (4×6)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => loadPresetTemplate("dolby")}
+                                        className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold border border-zinc-700 transition cursor-pointer"
+                                    >
+                                        Dolby 3-Section (9×14)
+                                    </button>
+                                </div>
+                            </div>
 
-                                        {/* Visual Screen Arc Preview */}
-                                        <div className="flex flex-col items-center py-2">
-                                            <div className="w-3/4 h-3 bg-gradient-to-r from-zinc-500 via-white to-zinc-500 rounded-t-full shadow-[0_-4px_15px_rgba(255,255,255,0.2)]"></div>
-                                            <span className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Screen</span>
-                                        </div>
+                            {/* Form Input Matrix */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {/* Screen Name */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Screen Name</label>
+                                    <input
+                                        type="text"
+                                        value={builderScreenName}
+                                        onChange={(e) => setBuilderScreenName(e.target.value)}
+                                        placeholder="e.g. Screen 1 - Laser 4K"
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+                                    />
+                                </div>
 
-                                        {/* Mini Seating Grid Preview */}
-                                        <div className="bg-gray-950/60 p-4 rounded-2xl border border-gray-800/80 flex flex-col gap-1.5 items-center">
-                                            {rowLetters.map((rLetter) => (
-                                                <div key={rLetter} className="flex items-center gap-1">
-                                                    <span className="w-3 text-[9px] font-bold text-gray-600 text-center">{rLetter}</span>
-                                                    <div className="flex gap-1">
-                                                        {[1, 2, 3, 4].map((c) => (
-                                                            <div key={c} className="w-4 h-4 rounded-t bg-gray-800 border border-gray-700/60"></div>
-                                                        ))}
+                                {/* Layout Experience */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Auditorium Experience</label>
+                                    <select
+                                        value={builderLayoutType}
+                                        onChange={(e) => setBuilderLayoutType(e.target.value)}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-500 cursor-pointer"
+                                    >
+                                        <option value="Standard Multiplex">Standard Multiplex</option>
+                                        <option value="IMAX Tiered">IMAX Tiered Hall</option>
+                                        <option value="VIP Recliner Lounge">VIP Recliner Lounge</option>
+                                        <option value="Dolby Cinema 3-Section">Dolby Cinema 3-Section</option>
+                                        <option value="Grand Cinema Hall">Grand Cinema Hall</option>
+                                        <option value="Custom Freeform">Custom Freeform</option>
+                                    </select>
+                                </div>
+
+                                {/* Rows Count */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1.5">
+                                        <label className="text-xs font-semibold text-zinc-300">Auditorium Rows</label>
+                                        <span className="text-xs font-bold text-zinc-200">{builderRows} Rows (A to {["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"][builderRows - 1] || "Z"})</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="range"
+                                            min="2"
+                                            max="20"
+                                            value={builderRows}
+                                            onChange={(e) => setBuilderRows(Number(e.target.value))}
+                                            className="w-full accent-zinc-200 cursor-pointer"
+                                        />
+                                        <input
+                                            type="number"
+                                            min="2"
+                                            max="20"
+                                            value={builderRows}
+                                            onChange={(e) => setBuilderRows(Math.min(20, Math.max(2, Number(e.target.value) || 2)))}
+                                            className="w-14 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white text-center focus:outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Seats Per Row (Columns) */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1.5">
+                                        <label className="text-xs font-semibold text-zinc-300">Seats Per Row (Cols)</label>
+                                        <span className="text-xs font-bold text-zinc-200">{builderCols} Columns</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="range"
+                                            min="4"
+                                            max="24"
+                                            value={builderCols}
+                                            onChange={(e) => setBuilderCols(Number(e.target.value))}
+                                            className="w-full accent-zinc-200 cursor-pointer"
+                                        />
+                                        <input
+                                            type="number"
+                                            min="4"
+                                            max="24"
+                                            value={builderCols}
+                                            onChange={(e) => setBuilderCols(Math.min(24, Math.max(4, Number(e.target.value) || 4)))}
+                                            className="w-14 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white text-center focus:outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Aisle / Gangway Style */}
+                                <div className="sm:col-span-2">
+                                    <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Aisle / Gangway Layout</label>
+                                    <select
+                                        value={builderAisleType}
+                                        onChange={(e) => setBuilderAisleType(e.target.value)}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-500 cursor-pointer"
+                                    >
+                                        <option value="center">Center Aisle (2 Blocks: Left Wing & Right Wing)</option>
+                                        <option value="dual">Dual Aisle (3 Blocks: Left Wing, Center Block, Right Wing)</option>
+                                        <option value="single">Continuous Block (No Central Aisle, Side Exits)</option>
+                                        <option value="custom">Custom Aisle Gaps (User Defined Column Numbers)</option>
+                                    </select>
+                                </div>
+
+                                {/* Custom Aisle Input (Conditional) */}
+                                {builderAisleType === "custom" && (
+                                    <div className="sm:col-span-2">
+                                        <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Aisle Gap Column Numbers</label>
+                                        <input
+                                            type="text"
+                                            value={builderCustomAisles}
+                                            onChange={(e) => setBuilderCustomAisles(e.target.value)}
+                                            placeholder="e.g. 3, 9 (places gangway aisle after seat 3 and 9)"
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* ============================================================== */}
+                            {/* INTERACTIVE LIVE SEATING CANVAS                                */}
+                            {/* ============================================================== */}
+                            <div className="pt-4 border-t border-zinc-800">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                                            <span>Interactive Live Seating Canvas</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
+                                                Click any seat to toggle Active / Space Gap
+                                            </span>
+                                        </h4>
+                                        <p className="text-xs text-zinc-400 mt-0.5">
+                                            Click on individual seats to remove them for wheelchair spaces, sound decks, or irregular curved hall walls.
+                                        </p>
+                                    </div>
+
+                                    {builderDisabledSeats.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setBuilderDisabledSeats([])}
+                                            className="px-2.5 py-1 text-xs text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-700 rounded-lg transition cursor-pointer"
+                                        >
+                                            Reset All Removed Seats ({builderDisabledSeats.length})
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Live Seating Canvas Box */}
+                                <div className="bg-[#090b0e] border border-zinc-800/90 rounded-2xl p-6 overflow-x-auto flex flex-col items-center shadow-inner">
+                                    {/* Curved Cinema Screen */}
+                                    <div className="w-full max-w-lg mb-8 flex flex-col items-center">
+                                        <div className="w-4/5 h-2.5 bg-gradient-to-r from-transparent via-zinc-300 to-transparent rounded-full shadow-[0_0_20px_rgba(255,255,255,0.4)] mb-1.5" />
+                                        <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
+                                            CINEMA PROJECTION SCREEN
+                                        </span>
+                                    </div>
+
+                                    {/* Interactive Seating Matrix */}
+                                    {(() => {
+                                        const allRows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"].slice(0, builderRows);
+                                        const aisleGaps = getAisleGaps(builderCols, builderAisleType, builderCustomAisles);
+
+                                        return (
+                                            <div className="flex flex-col items-center gap-2 select-none">
+                                                {allRows.map((row) => (
+                                                    <div key={row} className="flex items-center gap-2">
+                                                        {/* Left Row Identifier */}
+                                                        <span className="w-5 text-xs font-bold text-zinc-500 text-center">{row}</span>
+
+                                                        {/* Row Seats with Aisles */}
+                                                        <div className="flex items-center gap-1.5">
+                                                            {Array.from({ length: builderCols }).map((_, cIdx) => {
+                                                                const seatNum = cIdx + 1;
+                                                                const seatId = `${row}${seatNum}`;
+                                                                const isOmitted = builderDisabledSeats.includes(seatId);
+                                                                const isAisle = aisleGaps.includes(seatNum);
+
+                                                                return (
+                                                                    <React.Fragment key={seatId}>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => toggleBuilderSeat(seatId)}
+                                                                            title={`${seatId}: ${isOmitted ? "Click to Activate" : "Click to Remove/Omit"}`}
+                                                                            className={`w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer ${
+                                                                                isOmitted
+                                                                                    ? "bg-transparent border border-dashed border-zinc-800 text-zinc-700 hover:border-zinc-600 hover:text-zinc-500"
+                                                                                    : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 hover:border-zinc-500 shadow-sm"
+                                                                            }`}
+                                                                        >
+                                                                            {isOmitted ? "·" : seatNum}
+                                                                        </button>
+
+                                                                        {/* Aisle Gap */}
+                                                                        {isAisle && (
+                                                                            <div className="w-5 sm:w-8 flex items-center justify-center pointer-events-none">
+                                                                                <div className="w-px h-5 bg-zinc-800/40" />
+                                                                            </div>
+                                                                        )}
+                                                                    </React.Fragment>
+                                                                );
+                                                            })}
+                                                        </div>
+
+                                                        {/* Right Row Identifier */}
+                                                        <span className="w-5 text-xs font-bold text-zinc-500 text-center">{row}</span>
                                                     </div>
-                                                    <div className="w-3"></div>
-                                                    <div className="flex gap-1">
-                                                        {[5, 6, 7, 8].map((c) => (
-                                                            <div key={c} className="w-4 h-4 rounded-t bg-gray-800 border border-gray-700/60"></div>
-                                                        ))}
-                                                    </div>
-                                                    <span className="w-3 text-[9px] font-bold text-gray-600 text-center">{rLetter}</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
 
-                                        <div className="flex items-center justify-between text-xs text-gray-400 pt-2">
-                                            <span>{rowsCount} Rows • {screen.seatsPerRow || 8} Seats / Row</span>
-                                            <span className="text-emerald-400 font-medium">✓ Active Seating Grid</span>
+                                    {/* Canvas Legend */}
+                                    <div className="flex flex-wrap items-center justify-center gap-6 mt-8 pt-4 border-t border-zinc-800/60 text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 rounded bg-zinc-800 border border-zinc-700" />
+                                            <span className="text-zinc-300">Active Seat</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 rounded border border-dashed border-zinc-700 bg-transparent flex items-center justify-center text-[10px] text-zinc-500">·</div>
+                                            <span className="text-zinc-400">Omitted Space / Wheelchair Bay (Click to restore)</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-2 bg-zinc-800/60 rounded" />
+                                            <span className="text-zinc-400">Aisle Gangway</span>
                                         </div>
                                     </div>
-                                );
-                            })}
+                                </div>
+                            </div>
+
+                            {/* Summary & Save Action Bar */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-zinc-800">
+                                <div className="flex items-center gap-4 text-xs">
+                                    <div className="bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800">
+                                        <span className="text-zinc-500 block text-[10px] uppercase">Active Capacity</span>
+                                        <span className="text-sm font-black text-white">{computedCapacity} Seats</span>
+                                    </div>
+                                    <div className="bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800">
+                                        <span className="text-zinc-500 block text-[10px] uppercase">Hall Geometry</span>
+                                        <span className="text-sm font-bold text-zinc-300">{builderRows} Rows × {builderCols} Cols</span>
+                                    </div>
+                                    {builderDisabledSeats.length > 0 && (
+                                        <div className="bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-800">
+                                            <span className="text-zinc-500 block text-[10px] uppercase">Omitted Spaces</span>
+                                            <span className="text-sm font-bold text-amber-400">{builderDisabledSeats.length} Spaces</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    {editingScreenIndex !== null && (
+                                        <button
+                                            type="button"
+                                            onClick={handleResetBuilder}
+                                            className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold border border-zinc-700 transition cursor-pointer"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveScreenLayout}
+                                        className="px-5 py-2.5 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 font-bold text-xs tracking-tight shadow-lg transition cursor-pointer"
+                                    >
+                                        {editingScreenIndex !== null ? "Update Screen Layout" : "+ Save & Add Screen to Theater"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ============================================================== */}
+                        {/* 2. CONFIGURED SCREENS IN THIS THEATER                          */}
+                        {/* ============================================================== */}
+                        <div className="space-y-4">
+                            <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                <span>Configured Screens in {currentTheater?.name || currentTheater?.theaterName || "Cinema"}</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
+                                    {screensList.length} Screens
+                                </span>
+                            </h3>
+
+                            {screensList.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {screensList.map((screen, sIdx) => {
+                                        const cols = screen.columns || screen.seatsPerRow || 12;
+                                        const rows = screen.rows || Math.ceil(screen.capacity / cols) || 8;
+                                        const allRows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"].slice(0, rows);
+                                        const disabledList = (screen.disabledSeats || "").split(",").filter(Boolean);
+                                        const aisleGaps = getAisleGaps(cols, screen.aisleType || "center", screen.aisles || "");
+
+                                        return (
+                                            <div
+                                                key={sIdx}
+                                                className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4 hover:border-zinc-700 transition"
+                                            >
+                                                {/* Header */}
+                                                <div className="flex items-start justify-between pb-3 border-b border-zinc-800">
+                                                    <div>
+                                                        <h4 className="text-base font-bold text-white">{screen.screenName}</h4>
+                                                        <span className="text-xs text-zinc-400 font-semibold">
+                                                            {screen.layoutType || "Standard Multiplex"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Capacity</span>
+                                                        <span className="text-base font-black text-white">{screen.capacity} Seats</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Screen Arc */}
+                                                <div className="flex flex-col items-center py-1">
+                                                    <div className="w-3/4 h-2 bg-gradient-to-r from-transparent via-zinc-400 to-transparent rounded-full shadow-[0_0_10px_rgba(255,255,255,0.3)] mb-1" />
+                                                    <span className="text-[9px] uppercase tracking-widest text-zinc-600 font-bold">Screen</span>
+                                                </div>
+
+                                                {/* Mini Dynamic Seating Matrix Preview */}
+                                                <div className="bg-[#090b0e] p-3 rounded-xl border border-zinc-800/80 overflow-x-auto flex flex-col gap-1 items-center max-h-48 overflow-y-auto">
+                                                    {allRows.map((rLetter) => (
+                                                        <div key={rLetter} className="flex items-center gap-1">
+                                                            <span className="w-3 text-[8px] font-bold text-zinc-600 text-center">{rLetter}</span>
+                                                            <div className="flex gap-0.5">
+                                                                {Array.from({ length: cols }).map((_, cIdx) => {
+                                                                    const seatNum = cIdx + 1;
+                                                                    const seatId = `${rLetter}${seatNum}`;
+                                                                    const isOmitted = disabledList.includes(seatId);
+                                                                    const isAisle = aisleGaps.includes(seatNum);
+
+                                                                    return (
+                                                                        <React.Fragment key={seatId}>
+                                                                            <div
+                                                                                className={`w-3.5 h-3.5 rounded-sm ${
+                                                                                    isOmitted
+                                                                                        ? "bg-transparent border border-dashed border-zinc-800/60"
+                                                                                        : "bg-zinc-800 border border-zinc-700/60"
+                                                                                }`}
+                                                                                title={`${seatId}${isOmitted ? " (Omitted)" : ""}`}
+                                                                            />
+                                                                            {isAisle && <div className="w-2" />}
+                                                                        </React.Fragment>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <span className="w-3 text-[8px] font-bold text-zinc-600 text-center">{rLetter}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Details & Actions */}
+                                                <div className="flex items-center justify-between pt-2 border-t border-zinc-800 text-xs">
+                                                    <span className="text-zinc-400">
+                                                        {rows} Rows × {cols} Cols • {screen.aisleType === "dual" ? "Dual Aisle" : screen.aisleType === "single" ? "Continuous" : "Center Aisle"}
+                                                    </span>
+
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleEditScreen(screen, sIdx)}
+                                                            className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition cursor-pointer"
+                                                        >
+                                                            Edit Layout
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteScreen(sIdx)}
+                                                            className="p-1 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/60 transition cursor-pointer"
+                                                            title="Delete Screen"
+                                                        >
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="p-8 text-center rounded-2xl bg-zinc-900/30 border border-dashed border-zinc-800 text-zinc-400 text-sm">
+                                    No screens configured yet. Use the Auditorium Layout Builder above to design your first screen.
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -1974,14 +2466,19 @@ function TheaterDashboard() {
                 const occ = capacity > 0 ? Math.round((bookedList.length / capacity) * 100) : 0;
                 const price = Number(viewingSeatMapShow.price) || 180;
                 const revenue = bookedList.length * price;
-                const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
-                const seatsPerRow = 8;
-                const totalRows = Math.ceil(capacity / seatsPerRow);
-                const activeRows = rows.slice(0, totalRows);
+
+                // Match with screen configuration for dynamic rows, columns and aisles
+                const matchingScreen = screensList.find((sc) => sc.screenName === viewingSeatMapShow.screen);
+                const seatsPerRow = matchingScreen?.columns || matchingScreen?.seatsPerRow || (capacity >= 130 ? 14 : capacity >= 90 ? 12 : capacity >= 50 ? 10 : capacity <= 30 ? 6 : 8);
+                const totalRows = matchingScreen?.rows || Math.ceil(capacity / seatsPerRow);
+                const allLetterRows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"];
+                const activeRows = allLetterRows.slice(0, Math.min(allLetterRows.length, Math.max(2, totalRows)));
+                const aisleGaps = getAisleGaps(seatsPerRow, matchingScreen?.aisleType || "center", matchingScreen?.aisles || "");
+                const disabledList = (matchingScreen?.disabledSeats || "").split(",").filter(Boolean);
 
                 return (
                     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-                        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
+                        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative">
                             {/* Header */}
                             <div className="flex items-start justify-between pb-4 border-b border-zinc-800">
                                 <div>
@@ -2004,6 +2501,7 @@ function TheaterDashboard() {
                                     </h3>
                                     <p className="text-xs text-zinc-400">
                                         {viewingSeatMapShow.screen || "Screen 1"} • {viewingSeatMapShow.time} • ₹{price} per ticket
+                                        {matchingScreen && ` • ${activeRows.length} Rows × ${seatsPerRow} Columns`}
                                     </p>
                                 </div>
                                 <button
@@ -2046,7 +2544,7 @@ function TheaterDashboard() {
                             </div>
 
                             {/* Seating Grid */}
-                            <div className="flex flex-col items-center gap-2 my-4">
+                            <div className="flex flex-col items-center gap-2 my-4 overflow-x-auto p-2">
                                 {activeRows.map((row) => (
                                     <div key={row} className="flex items-center gap-2">
                                         <span className="text-xs font-bold text-zinc-500 w-4 text-center">{row}</span>
@@ -2054,22 +2552,36 @@ function TheaterDashboard() {
                                             {Array.from({ length: seatsPerRow }).map((_, cIdx) => {
                                                 const seatNum = cIdx + 1;
                                                 const seatId = `${row}${seatNum}`;
-                                                const seatSeq = (activeRows.indexOf(row) * seatsPerRow) + seatNum;
-                                                if (seatSeq > capacity) return null;
                                                 const isBooked = bookedList.includes(seatId);
+                                                const isAisle = aisleGaps.includes(seatNum);
+                                                const isOmitted = disabledList.includes(seatId);
 
                                                 return (
-                                                    <div
-                                                        key={seatId}
-                                                        className={`w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center transition border ${
-                                                            isBooked
-                                                                ? "bg-red-950/80 text-red-200 border-red-700/80 shadow-sm"
-                                                                : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500"
-                                                        }`}
-                                                        title={`${seatId}: ${isBooked ? "Booked / Sold" : "Available"}`}
-                                                    >
-                                                        {seatNum}
-                                                    </div>
+                                                    <React.Fragment key={seatId}>
+                                                        {isOmitted ? (
+                                                            <div
+                                                                className="w-7 h-7 rounded border border-dashed border-zinc-800/80 flex items-center justify-center text-[8px] text-zinc-600 opacity-40 select-none"
+                                                                title={`${seatId}: Omitted space`}
+                                                            >
+                                                                ·
+                                                            </div>
+                                                        ) : (
+                                                            <div
+                                                                className={`w-7 h-7 rounded-md text-[10px] font-bold flex items-center justify-center transition border ${
+                                                                    isBooked
+                                                                        ? "bg-red-950/80 text-red-200 border-red-700/80 shadow-sm"
+                                                                        : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:border-zinc-500"
+                                                                }`}
+                                                                title={`${seatId}: ${isBooked ? "Booked / Sold" : "Available"}`}
+                                                            >
+                                                                {seatNum}
+                                                            </div>
+                                                        )}
+
+                                                        {isAisle && (
+                                                            <div className="w-4 sm:w-6 flex items-center justify-center pointer-events-none" />
+                                                        )}
+                                                    </React.Fragment>
                                                 );
                                             })}
                                         </div>
