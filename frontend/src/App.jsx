@@ -9,6 +9,9 @@ import NotFound from './components/NotFound'
 import Theaters from './components/Theaters'
 import Screen from './components/Screen'
 import Checkout from './components/Checkout'
+import TheaterDashboard from './components/TheaterDashboard'
+import MyBookings from './components/MyBookings'
+import { AuthProvider } from './context/AuthContext'
 
 function App() {
 
@@ -54,19 +57,48 @@ function App() {
         path: "/theater/screen/:theaterName/:screen/:capacity",
         element: <>
           <Navbar />
-          <Screen/>
+          <Screen />
         </>
       },
       {
         path: "/theater/checkout/:theaterName",
         element: <>
           <Navbar />
-          <Checkout/>
+          <Checkout />
+        </>
+      },
+      {
+        path: "/my-tickets",
+        element: <>
+          <Navbar />
+          <MyBookings />
+        </>
+      },
+      {
+        path: "/bookings",
+        element: <>
+          <Navbar />
+          <MyBookings />
+        </>
+      },
+      {
+        path: "/theater-dashboard",
+        element: <>
+          <Navbar />
+          <TheaterDashboard />
+        </>
+      },
+      {
+        path: "/admin",
+        element: <>
+          <Navbar />
+          <TheaterDashboard />
         </>
       },
       {
         path: "*",
         element: <>
+          <Navbar />
           <NotFound />
         </>
       }
@@ -74,9 +106,9 @@ function App() {
   )
 
   return (
-    <>
+    <AuthProvider>
       <RouterProvider router={router} />
-    </>
+    </AuthProvider>
   )
 }
 

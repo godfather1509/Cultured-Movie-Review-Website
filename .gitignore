@@ -1,0 +1,27 @@
+# Environment variables & secrets
+.env
+.env.*
+*.env
+application-secret.properties
+application-local.properties
+
+# Build artifacts & dependencies
+target/
+node_modules/
+dist/
+build/
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+.settings/
+.project
+.classpath
+
+# OS files
+.DS_Store
+Thumbs.db

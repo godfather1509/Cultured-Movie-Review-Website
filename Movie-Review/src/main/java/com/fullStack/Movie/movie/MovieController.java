@@ -1,45 +1,63 @@
 package com.fullStack.Movie.movie;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-// @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/api/v1/movies") // this enable request handling
-// this is an api end point
+@RequestMapping("/api/v1/movies")
 public class MovieController {
-    // this class handels https response from frontend 
-    // it sends received data to services class and vice versa
 
     @Autowired
     private MovieService movieService;
+
     @GetMapping
     public ResponseEntity<List<Movie>> getAllMovies(){
         return new ResponseEntity<List<Movie>>(movieService.allMovies(), HttpStatus.OK);
     }    
-    // This is Rest api controller 
 
-    @GetMapping("/{id}") // this tells program that function will accept only GET request
+    @GetMapping("/{id}")
     public ResponseEntity<Optional<Movie>> getsingleMovie(@PathVariable ObjectId id){
-        // Using 'optional' allows us to return either a null value or the specified datatype.
-        // this function returns data on basis of Id
-        return new ResponseEntity<Optional<Movie>>(movieService.singleMovie(id),HttpStatus.OK);
-
+        return new ResponseEntity<Optional<Movie>>(movieService.singleMovie(id), HttpStatus.OK);
     }
 
     @GetMapping("imdb/{imdbId}")
     public ResponseEntity<Optional<Movie>> getsingleMovie(@PathVariable String imdbId){
-        // Using 'optional' allows us to return either a null value or the specified datatype.
-        // this function detects data on basis of imdb id
-        return new ResponseEntity<Optional<Movie>>(movieService.singleMovieImdb(imdbId),HttpStatus.OK);
+        return new ResponseEntity<Optional<Movie>>(movieService.singleMovieImdb(imdbId), HttpStatus.OK);
+    }
+
+    @SuppressWarnings("unchecked")
+    @PostMapping
+    public ResponseEntity<Movie> createMovie(@RequestBody Map<String, Object> payload) {
+        String imdbId = (String) payload.getOrDefault("imdbId", "tt" + (System.currentTimeMillis() % 10000000));
+        String title = (String) payload.get("title");
+        String releaseDate = (String) payload.getOrDefault("releaseDate", "2026-01-01");
+        String trailerLink = (String) payload.getOrDefault("trailerLink", "");
+        String poster = (String) payload.getOrDefault("poster", "");
+        List<String> genres = payload.containsKey("genres") ? (List<String>) payload.get("genres") : new ArrayList<>();
+        List<String> backdrops = payload.containsKey("backdrops") ? (List<String>) payload.get("backdrops") : new ArrayList<>();
+
+        if (poster != null && !poster.isEmpty() && backdrops.isEmpty()) {
+            backdrops.add(poster);
+        }
+
+        Movie created = movieService.createMovie(imdbId, title, releaseDate, trailerLink, poster, genres, backdrops);
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
+    }
+
+    @DeleteMapping("/{imdbId}")
+    public ResponseEntity<?> deleteMovie(@PathVariable("imdbId") String imdbId) {
+        boolean deleted = movieService.deleteMovie(imdbId);
+        if (deleted) {
+            return new ResponseEntity<>(Map.of("message", "Movie deleted successfully"), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(Map.of("error", "Movie not found"), HttpStatus.NOT_FOUND);
     }
 }

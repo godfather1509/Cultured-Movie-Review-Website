@@ -1,5 +1,5 @@
 package com.fullStack.Movie.login;
-// import java.util.List;
+
 import org.bson.types.ObjectId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,5 +18,27 @@ public class Login {
     private String name;
     private String email;
     private String password;
-    
+    private String role = "USER"; // "USER" or "THEATER"
+    private String theaterId;
+    private String theaterName;
+
+    public String getUserId() {
+        return id != null ? id.toHexString() : null;
+    }
+
+    public Login(String name, String email, String password, String role) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.role = role != null ? role : "USER";
+    }
+
+    public Login(String name, String email, String password, String role, String theaterId, String theaterName) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.role = role != null ? role : "USER";
+        this.theaterId = theaterId;
+        this.theaterName = theaterName;
+    }
 }
