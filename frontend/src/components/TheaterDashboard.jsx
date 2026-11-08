@@ -904,8 +904,8 @@ function TheaterDashboard() {
                         </div>
                     </div>
 
-                    {/* Cinema Selector for Theater Mode & Admin Actions */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* Cinema Selector & Sign Out */}
+                    <div className="flex flex-wrap items-center gap-2.5">
                         {/* Active Theater Selector */}
                         {viewMode === "THEATER" && allTheaters.length > 0 && (
                             <div className="flex items-center gap-2 bg-gray-900/90 border border-gray-700/80 rounded-xl p-1.5">
@@ -924,21 +924,17 @@ function TheaterDashboard() {
                             </div>
                         )}
 
-                        {/* Admin Actions (Sign Out) */}
-                        {viewMode === "ADMIN" && (
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => {
-                                        logout();
-                                        navigate("/");
-                                    }}
-                                    className="px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-red-950/60 text-zinc-400 hover:text-red-300 border border-zinc-800 hover:border-red-800/60 text-xs font-semibold tracking-tight transition cursor-pointer"
-                                    title="Sign Out"
-                                >
-                                    Sign Out
-                                </button>
-                            </div>
-                        )}
+                        {/* Sign Out */}
+                        <button
+                            onClick={() => {
+                                logout();
+                                navigate("/");
+                            }}
+                            className="px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-red-950/60 text-zinc-400 hover:text-red-300 border border-zinc-800 hover:border-red-800/60 text-xs font-semibold tracking-tight transition cursor-pointer"
+                            title="Sign Out"
+                        >
+                            Sign Out
+                        </button>
                     </div>
                 </div>
             </div>

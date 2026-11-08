@@ -18,8 +18,8 @@ function Navbar() {
         navigate("/");
     };
 
-    // Completely hide top bar Navbar on Admin Console route so only Administrator Portal header is kept
-    if (location.pathname.startsWith("/admin")) {
+    // Completely hide top bar Navbar on Admin Console & Theater Studio routes so only dedicated header is kept
+    if (location.pathname.startsWith("/admin") || location.pathname.startsWith("/theater-dashboard")) {
         return null;
     }
 

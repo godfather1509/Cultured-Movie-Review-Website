@@ -84,7 +84,6 @@ function App() {
       {
         path: "/theater-dashboard",
         element: <>
-          <Navbar />
           <TheaterDashboard />
         </>
       },
